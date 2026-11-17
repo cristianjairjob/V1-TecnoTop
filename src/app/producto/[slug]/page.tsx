@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Truck, ShieldCheck } from "lucide-react";
+import { Truck, ShieldCheck, Check, PackageCheck } from "lucide-react";
 import { db } from "@/lib/db";
 import { AddToCart } from "@/components/add-to-cart";
+import { ProductGallery } from "@/components/product-gallery";
 export default async function ProductPage({
   params,
 }: {
@@ -17,26 +18,21 @@ export default async function ProductPage({
   if (!p) notFound();
   const images = Array.isArray(p.images) ? p.images.map(String) : [];
   return (
-    <div className="wrap page-section">
+    <div className="product-page"><div className="wrap page-section">
       <div className="breadcrumb">
         <Link href="/">Inicio</Link> /{" "}
         <Link href={`/${p.category?.slug}`}>{p.category?.name}</Link> / {p.name}
       </div>
       <div className="product-detail">
-        <div className="gallery">
-          {images.map((image, i) => (
-            <img
-              key={image}
-              src={image}
-              alt={`${p.name}, imagen ${i + 1}`}
-              loading={i ? "lazy" : "eager"}
-            />
-          ))}
+        <div><ProductGallery images={images} name={p.name} />
+          <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span><PackageCheck />Sigue tu pedido</span></div>
         </div>
-        <div>
+        <div className="product-information">
           <span className="eyebrow">{p.brand || p.category?.name}</span>
           <h1>{p.name}</h1>
+          <ul className="product-highlights"><li><Check /> Envío gratis a todo Colombia</li><li><Check /> Compra con pago contraentrega</li><li><Check /> Elige tu variante y cantidad disponible</li></ul>
           <AddToCart
+            key={p.id}
             product={{
               id: p.id,
               name: p.name,
@@ -53,10 +49,10 @@ export default async function ProductPage({
           />
           <div className="product-assurances">
             <span>
-              <Truck size={20} /> Envío gratuito
+              <Truck size={28} /> Envíos a todo el país
             </span>
             <span>
-              <ShieldCheck size={20} /> Pago contraentrega
+              <ShieldCheck size={28} /> Contraentrega
             </span>
           </div>
           <h2>Conoce los detalles</h2>
@@ -65,6 +61,6 @@ export default async function ProductPage({
           </p>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

@@ -1948,3 +1948,64 @@ button:focus-visible {
   .announcement-group:not(:first-child) { display: none; }
   .announcement-group i:last-child { display: none; }
 }
+
+/* Shared product template: every price comes from the current product. */
+.product-page { background: radial-gradient(ellipse at 15% 15%, #dff2ff, transparent 65%), #f6fbff; color: #092456; }
+.product-page .page-section { padding-top: 24px; }
+.product-page .product-detail { gap: 42px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); margin-top: 24px; align-items: start; }
+.product-page .product-detail h1 { font-size: clamp(30px, 3.4vw, 54px); line-height: 1.08; letter-spacing: -.04em; margin: 12px 0 20px; color: #073f9f; overflow-wrap: anywhere; }
+.product-hero-image { aspect-ratio: 1.1; display: grid; place-items: center; border-radius: 26px; overflow: hidden; background: linear-gradient(135deg, #e0f4ff, #fff 55%, #c7e7fc); border: 1px solid #d2e9fa; }
+.product-hero-image img { width: 100%; height: 100%; max-height: 620px; object-fit: contain; }
+.product-no-image { display: grid; justify-items: center; gap: 20px; color: #5f82a4; }
+.product-gallery-controls { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.product-gallery-controls > button { background: transparent; color: #063a8a; border: 0; padding: 5px; cursor: pointer; }
+.product-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding: 4px; flex: 1; }
+.product-thumbnails button { flex: 0 0 21%; padding: 0; aspect-ratio: 1; border-radius: 16px; overflow: hidden; border: 2px solid transparent; background: #e2f2ff; cursor: pointer; }
+.product-thumbnails button[aria-pressed=true] { border-color: #008bff; box-shadow: 0 0 0 2px #c4e9ff; }
+.product-thumbnails img { width: 100%; height: 100%; object-fit: contain; }
+.product-benefits, .product-page .product-assurances { display: flex; align-items: center; justify-content: space-around; gap: 12px; padding: 22px 16px; margin-top: 16px; background: #e1f2ff; border: 0; border-radius: 28px; }
+.product-benefits span, .product-page .product-assurances span { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+.product-benefits svg, .product-page .product-assurances svg { flex-shrink: 0; color: #007fff; }
+.product-highlights { list-style: none; padding: 0; display: grid; gap: 9px; margin: 0 0 24px; font-size: 14px; }
+.product-highlights li { display: flex; gap: 9px; align-items: center; }
+.product-highlights svg { width: 20px; color: #0077ff; flex-shrink: 0; }
+.product-unit-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.product-unit-price strong { font-size: 28px; color: #053b91; }
+.product-unit-price span { color: #566b85; font-size: 12px; }
+.product-variants, .product-offers { border: 0; padding: 0; margin: 0 0 20px; min-width: 0; }
+.product-variants legend { font-weight: 700; margin-bottom: 10px; }
+.product-variants legend span { font-weight: 400; color: #5d6b85; }
+.product-variants button { border: 1px solid #cce7fa; background: #e5f3ff; color: #092456; padding: 13px 18px; border-radius: 14px; margin: 0 8px 8px 0; cursor: pointer; }
+.product-variants button[aria-pressed=true] { border-color: #007eff; background: #fff; box-shadow: 0 0 0 1px #007eff; }
+.product-variants button:disabled { opacity: .45; cursor: not-allowed; }
+.product-offers legend { text-align: center; width: 100%; margin-bottom: 12px; font-size: 13px; font-weight: 800; letter-spacing: .07em; }
+.product-offers label { display: flex; align-items: center; gap: 14px; background: #e1f1fd; border: 2px solid transparent; padding: 15px; border-radius: 16px; margin-bottom: 8px; cursor: pointer; }
+.product-offers label.selected { border-color: #087bff; background: #f9fcff; }
+.product-offers label:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+.product-offers input { width: 23px; height: 23px; padding: 0; accent-color: #007eff; flex-shrink: 0; }
+.product-offers label span { flex: 1; }
+.product-offers strong { display: block; font-size: 21px; }
+.product-offers small { display: block; color: #596d88; margin-top: 3px; font-size: 11px; }
+.product-offers b { font-size: clamp(15px, 1.6vw, 23px); white-space: nowrap; }
+.product-page .buy-actions { align-items: stretch; }
+.product-page .buy-actions input { width: 62px; border-radius: 18px; }
+.product-page .buy-actions .button { border-radius: 40px; font-size: 25px; font-weight: 800; padding: 18px; background: linear-gradient(110deg, #00a7ff, #0035ed); box-shadow: 0 7px 22px #0476ff26; }
+.product-page .buy-actions .button svg { width: 28px; height: 28px; }
+.product-page .buy-actions .button:disabled { opacity: .45; cursor: not-allowed; }
+.product-page .shipping-note { margin-top: 14px; }
+.product-page .product-description { font-size: 14px; }
+.product-page button:focus-visible, .product-page input:focus-visible { outline: 3px solid #006aff; outline-offset: 3px; }
+@media (max-width: 850px) {
+ .product-page .product-detail { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+ .product-hero-image { max-height: 560px; }
+ .product-page .product-detail h1 { font-size: 36px; }
+ .product-benefits { padding: 17px 12px; }
+ .product-benefits span { font-size: 11px; gap: 6px; }
+ .product-offers b { font-size: 21px; }
+}
+@media (max-width: 380px) {
+ .product-offers label { padding: 12px 8px; gap: 8px; }
+ .product-offers b { font-size: 18px; }
+ .product-benefits span { flex-direction: column; text-align: center; }
+}
+.product-offers label { flex-direction: row; }

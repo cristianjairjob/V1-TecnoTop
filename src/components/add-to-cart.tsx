@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ShoppingBag, Check } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { money } from "@/lib/catalog-format";
+import { useRouter } from "next/navigation";
 export function AddToCart({
   product,
 }: {
@@ -16,6 +17,7 @@ export function AddToCart({
   };
 }) {
   const { items, setItems } = useCart();
+  const router = useRouter();
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
@@ -23,6 +25,7 @@ export function AddToCart({
   const stock = v?.stock ?? product.stock;
   const price = v?.price ?? product.price;
   function add() {
+    if (!Number.isInteger(quantity) || quantity < 1 || price <= 0 || stock < quantity || (product.variants.length && !v)) return;
     const existing = items.find(
       (i) =>
         i.productId === product.id && i.variantId === (variantId || undefined),
@@ -34,7 +37,7 @@ export function AddToCart({
     setItems(
       existing
         ? items.map((i) =>
-            i === existing ? { ...i, quantity: i.quantity + quantity } : i,
+            i === existing ? { ...i, price, stock, quantity: i.quantity + quantity } : i,
           )
         : [
             ...items,
@@ -50,30 +53,23 @@ export function AddToCart({
           ],
     );
     setMessage("Producto agregado al carrito.");
+    router.push("/carrito");
   }
   return (
     <div className="buy-panel">
-      <strong className="detail-price">{money(price)}</strong>
+      <div className="product-unit-price"><strong>{money(price)}</strong><span>por unidad · Envío gratis</span></div>
       {product.variants.length > 0 && (
-        <label>
-          Elige tu variante
-          <select
-            value={variantId}
-            onChange={(e) => {
-              setVariantId(e.target.value);
-              setMessage("");
-            }}
-          >
-            <option value="">Seleccionar</option>
-            {product.variants.map((v) => (
-              <option value={v.id} key={v.id} disabled={v.stock < 1}>
-                {v.name}
-                {v.stock < 1 ? " — Agotado" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="product-variants"><legend>Variante: <span>Elige tu opción</span></legend>
+          {product.variants.map((variant) => <button type="button" key={variant.id} aria-pressed={variantId === variant.id} disabled={variant.stock < 1} onClick={() => { setVariantId(variant.id); setQuantity(1); setMessage(""); }}>{variant.name}{variant.stock < 1 ? " · Agotado" : ""}</button>)}
+        </fieldset>
       )}
+      <fieldset className="product-offers"><legend>ELIGE TU CANTIDAD</legend>
+        {[1, 2, 3].map((count) => <label key={count} className={quantity === count ? "selected" : ""}>
+          <input type="radio" name={`quantity-${product.id}`} checked={quantity === count} disabled={stock < count} onChange={() => {setQuantity(count); setMessage("");}} />
+          <span><strong>Compra {count}</strong><small>{count === 1 ? "Precio por unidad" : `${count} unidades · Envío gratis`}</small></span>
+          <b>{money(price * count)}</b>
+        </label>)}
+      </fieldset>
       <div className="buy-actions">
         <input
           type="number"
@@ -82,16 +78,16 @@ export function AddToCart({
           min={1}
           max={Math.min(stock, 20)}
           onChange={(e) =>
-            setQuantity(Math.max(1, Math.min(20, Number(e.target.value))))
+            setQuantity(Math.max(1, Math.min(20, Math.trunc(Number(e.target.value)) || 1)))
           }
         />
         <button
           className="button"
           onClick={add}
-          disabled={stock < quantity || Boolean(product.variants.length && !v)}
+          disabled={price <= 0 || stock < quantity || Boolean(product.variants.length && !v)}
         >
           <ShoppingBag size={18} />{" "}
-          {stock < 1 ? "Agotado" : "Agregar al carrito"}
+          {stock < 1 ? "Agotado" : "¡Compra ya!"}
         </button>
       </div>
       <p className="shipping-note">
