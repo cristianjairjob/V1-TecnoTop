@@ -2,6 +2,8 @@
 
 Tienda propia para Colombia: Next.js App Router, React, TypeScript, Tailwind, Node.js 22, MySQL y Prisma. Frontend y API REST en la misma aplicación, sin WordPress, WooCommerce, Redis ni pasarela de pago.
 
+Compatibilidad Hostinger: `next.config.mjs` evita compilar la configuración TypeScript en un servidor con GLIBC anterior a 2.29. La compilación usa Webpack y el fallback SWC WebAssembly oficial, conservando Next.js y Node.js 22.
+
 ## Inicio
 
 ```sh

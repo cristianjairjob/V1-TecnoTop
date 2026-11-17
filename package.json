@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && node scripts/prepare-database.cjs && next build",
+    "build": "prisma generate && node scripts/prepare-database.cjs && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,7 @@
     "sync": "tsx scripts/sync.ts"
   },
   "dependencies": {
+    "@next/swc-wasm-nodejs": "16.4.6",
     "@prisma/client": "6.19.0",
     "bcryptjs": "3.0.3",
     "lucide-react": "^0.577.0",
