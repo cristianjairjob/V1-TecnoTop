@@ -168,3 +168,14 @@ for (const fails of [false, true]) {
     await assert.rejects(checkout({ ...input, reference: "Otra referencia" }), /ya fue utilizada/);
   });
 }
+
+test("demo product allows cart quotes but cannot create orders or contact Dropi", async () => {
+  process.env.DATABASE_URL = "mysql://mock:mock@localhost:3306/mock";
+  process.env.CHECKOUT_ENABLED = "true";
+  stub(db.siteSetting, "findUnique", async () => ({ value: { policiesApproved: true } }));
+  stub(db.order, "findUnique", async () => null);
+  stub(db.product, "findMany", async () => [{ id: "product-test", slug: "auriculares-demo-tecnotop", name: "Demo", salePrice: 99900, stock: 20, variants: [] }]);
+  stub(db, "$transaction", async () => assert.fail("No debe crear una orden"));
+  mock.method(globalThis, "fetch", async () => assert.fail("No debe contactar a Dropi"));
+  await assert.rejects(checkout(valid()), /producto de demostración/);
+});

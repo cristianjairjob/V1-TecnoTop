@@ -94,6 +94,8 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     return existing;
   }
   const q = await quote(input.items, input.promotionCode);
+  if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
+    throw new AppError(409, "Este carrito contiene un producto de demostración. Puedes probar el carrito, pero no confirmar un pedido con este producto.");
   if (new Set(q.lines.map((l) => l.product.supplierId)).size !== 1)
     throw new AppError(
       409,

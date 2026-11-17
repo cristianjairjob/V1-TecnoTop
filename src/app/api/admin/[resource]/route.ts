@@ -118,7 +118,7 @@ export async function POST(req: Request, ctx: Context) {
         if (!category) throw new AppError(400, "Activa una categoría para mostrar la demostración.");
         const demo = await db.product.upsert({
           where: { slug: "auriculares-demo-tecnotop" },
-          update: {},
+          update: { stock: 20 },
           create: {
             slug: "auriculares-demo-tecnotop",
             name: "Auriculares TecnoTop · DEMOSTRACIÓN",
@@ -126,7 +126,7 @@ export async function POST(req: Request, ctx: Context) {
             description: "Producto ficticio creado únicamente para probar el diseño de la tienda. No está disponible para la venta ni corresponde a un producto de Dropi.\n\nPrecio de ejemplo: $99.900 COP. Puedes editarlo en Administración → Productos para comprobar que cambia únicamente en esta ficha.\n\nLas imágenes son ilustraciones de demostración, no fotografías de un producto real.",
             images: ["https://tecnotop.com.co/demo/headphones-blue.svg", "https://tecnotop.com.co/demo/headphones-white.svg"],
             salePrice: 99900,
-            stock: 0,
+            stock: 20,
             status: "PUBLISHED",
             categoryId: category.id,
           },
