@@ -388,6 +388,7 @@ export function Admin() {
         {section === "dropi" && (
           <div className="panel">
             <h2>Catálogo e inventario</h2>
+            <DropiDiagnostic />
             <p>
               Importa páginas de 10 productos. La sincronización conserva
               precios y clasificación de TecnoTop.
@@ -969,6 +970,27 @@ export function Admin() {
       </div>
     </div>
   );
+}
+function DropiDiagnostic() {
+  const [result, setResult] = useState<Row | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  return <section aria-label="Conexión con Dropi">
+    <button type="button" disabled={busy} onClick={async () => {
+      setBusy(true); setError(""); setResult(null);
+      try { setResult(await api("dropi-diagnostic")); }
+      catch (e) { setError(e instanceof Error ? e.message : "No se pudo comprobar la conexión."); }
+      finally { setBusy(false); }
+    }}>{busy ? "Comprobando…" : "Comprobar conexión con Dropi"}</button>
+    <p className="small">Consulta un producto sin importarlo ni crear pedidos. No habilita ventas.</p>
+    {error && <p role="alert">{error}</p>}
+    {result && <div role="status">
+      <p>{result.connected ? "Conexión verificada" : `Conexión rechazada o no verificada (HTTP ${result.httpStatus})`}</p>
+      {result.accessDenied === true && <p>Dropi respondió Access denied. Solicita revisar la autorización de la integración, dominio e IP.</p>}
+      {Boolean(result.observedIp) && <p>IP que recibe Dropi: {string(result, "observedIp")}</p>}
+      <p>Última comprobación: {string(result, "checkedAt")}</p>
+    </div>}
+  </section>;
 }
 function DeliveryDetails({ order }: { order: Row }) {
   const [copyStatus, setCopyStatus] = useState("");

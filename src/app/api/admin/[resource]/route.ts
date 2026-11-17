@@ -7,6 +7,7 @@ import { failure, sameOrigin, readBody, AppError } from "@/lib/http";
 import { publishable } from "@/lib/validation";
 import { importPage, syncInventory } from "@/services/dropi/inventory";
 import { sendOrder } from "@/services/dropi/orders";
+import { diagnoseDropi } from "@/services/dropi/diagnostic";
 const id = z.string().min(1).max(100);
 const text = z.string().trim().max(5000);
 const price = z.number().finite().nonnegative().max(999999999).nullable();
@@ -22,6 +23,10 @@ export async function GET(req: Request, ctx: Context) {
     const paging = { take: 50, skip: page * 50 };
     let data: unknown;
     switch (resource) {
+      case "dropi-diagnostic":
+        await rateLimit("dropi-diagnostic", 5, 60);
+        data = await diagnoseDropi();
+        break;
       case "dashboard":
         data = {
           products: await db.product.count(),
