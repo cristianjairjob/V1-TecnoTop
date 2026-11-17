@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { money } from "@/lib/catalog-format";
 import { formatDeliveryDate } from "@/lib/delivery";
+import { dropiProductIdSchema } from "@/lib/dropi-product-id";
 type Row = Record<string, unknown>;
 const string = (r: Row, k: string) => String(r[k] ?? "");
 const rows = (v: unknown) => (Array.isArray(v) ? (v as Row[]) : []);
@@ -160,8 +161,7 @@ export function Admin() {
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
   const [revision, setRevision] = useState(0);
-  const [keywords, setKeywords] = useState("");
-  const [offset, setOffset] = useState(0);
+  const [dropiId, setDropiId] = useState("");
   useEffect(() => {
     let active = true;
     Promise.all([
@@ -390,35 +390,36 @@ export function Admin() {
             <h2>Catálogo e inventario</h2>
             <DropiDiagnostic />
             <p>
-              Importa páginas de 10 productos. La sincronización conserva
-              precios y clasificación de TecnoTop.
+              Copia el ID del producto en Dropi. Los productos nuevos se guardan
+              como borradores. Si ya existe, se actualizan stock, costo y variantes
+              conservando tu precio de venta, contenido y clasificación.
             </p>
             <div className="catalog-filters">
               <input
-                aria-label="Buscar en Dropi"
-                value={keywords}
-                onChange={(e) => {
-                  setKeywords(e.target.value);
-                  setOffset(0);
-                }}
-                placeholder="Palabra clave en Dropi"
+                aria-label="ID del producto en Dropi"
+                value={dropiId}
+                onChange={(e) => setDropiId(e.target.value)}
+                placeholder="ID de Dropi, por ejemplo #1970619"
+                inputMode="numeric"
+                maxLength={21}
               />
               <button
-                disabled={busy}
+                disabled={busy || !dropiId.trim()}
                 className="button"
                 onClick={async () => {
-                  const r = await mutate("dropi-import", { offset, keywords });
+                  const parsed = dropiProductIdSchema.safeParse(dropiId);
+                  if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+                  const r = await mutate("dropi-import-id", { dropiId: parsed.data });
                   if (r) {
-                    setOffset(r.data.hasMore ? r.data.nextOffset : 0);
                     setMessage(
-                      `${r.data.count} productos importados en borrador.${r.data.hasMore ? " Puedes importar la página siguiente." : " Fin de resultados."}`,
+                      `Producto #${r.data.dropiId}: ${r.data.name}. Guardado (${r.data.status === "DRAFT" ? "borrador" : "estado conservado"}). Puedes revisarlo en Productos.`,
                     );
                   }
                 }}
               >
                 {busy
                   ? "Consultando…"
-                  : `Importar ${offset ? "siguiente página" : "primera página"}`}
+                  : "Importar / sincronizar por ID"}
               </button>
               <button
                 disabled={busy}
@@ -428,14 +429,14 @@ export function Admin() {
                   let more = true;
                   while (more) {
                     const r = await mutate("dropi-sync", { offset: cursor });
-                    if (!r) break;
+                    if (!r) return;
                     cursor = r.data.nextOffset;
                     more = r.data.hasMore;
                   }
                   setMessage("Sincronización terminada; consulta el registro.");
                 }}
               >
-                Sincronizar inventario
+                Sincronizar productos ya importados
               </button>
             </div>
             <p className="small">

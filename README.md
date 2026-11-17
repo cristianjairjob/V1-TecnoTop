@@ -35,7 +35,7 @@ Consulta [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) para las fuentes y con
 - `POST orders/myorders`: contraentrega con CON RECAUDO. **Deshabilitado por defecto.**
 - Cotización y seguimiento remoto: no se identificaron contratos suficientes; los métodos retornan errores explícitos. No se inventan endpoints, guías ni estados.
 
-El panel importa páginas de 10 productos y sincroniza páginas de 20. La sincronización conserva precios, clasificación y texto comercial. Ante un fallo de inventario, pone el stock local afectado en cero y registra un código seguro. Una respuesta incompatible se rechaza; hay que ajustar el adaptador solo con documentación o respuestas verificadas.
+En Admin → Dropi, introduce el ID numérico (por ejemplo `1970619` o `#1970619`) y pulsa **Importar / sincronizar por ID**. Se consulta `GET products/v2/{id}` y se crea un borrador o actualiza el producto existente sin duplicarlo. **Sincronizar productos ya importados** recorre sus IDs en páginas de 20. La sincronización conserva precios, clasificación y texto comercial. Ante un fallo de inventario, pone el stock local afectado en cero y registra un código seguro. Un `401` indica acceso rechazado por Dropi, independientemente de si se consulta por ID o por listado. Una respuesta incompatible se rechaza; hay que ajustar el adaptador solo con documentación o respuestas verificadas. El endpoint anterior de importación paginada se conserva por compatibilidad, pero no es el flujo del panel.
 
 La consulta inicial desde el entorno de desarrollo respondió HTTP 401. Configurar el token no equivale a haber verificado la conexión. Validar nuevamente desde Hostinger antes de habilitar ventas.
 

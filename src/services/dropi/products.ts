@@ -27,6 +27,6 @@ export async function getDropiProduct(id: string) {
   const parsed = productSchema.safeParse(
     await dropiRequest(`products/v2/${id}`, "GET"),
   );
-  if (!parsed.success) throw new DropiError("DROPI_INVALID_PRODUCT");
+  if (!parsed.success || parsed.data.id !== id) throw new DropiError("DROPI_INVALID_PRODUCT");
   return parsed.data;
 }

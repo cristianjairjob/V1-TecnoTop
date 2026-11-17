@@ -49,7 +49,9 @@ export function failure(e: unknown) {
   if (e instanceof DropiError)
     return NextResponse.json(
       {
-        error: "No fue posible completar la operación con Dropi.",
+        error: e.httpStatus === 401
+          ? "Dropi rechazó el acceso (401). Revisa la autorización del token, la integración y la IP del servidor con soporte de Dropi."
+          : "No fue posible completar la operación con Dropi.",
         code: e.code,
       },
       { status: 502 },

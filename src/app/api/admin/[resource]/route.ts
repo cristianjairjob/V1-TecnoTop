@@ -5,7 +5,8 @@ import { db } from "@/lib/db";
 import { requireAdmin, rateLimit } from "@/lib/auth";
 import { failure, sameOrigin, readBody, AppError } from "@/lib/http";
 import { publishable } from "@/lib/validation";
-import { importPage, syncInventory } from "@/services/dropi/inventory";
+import { importPage, importDropiProductById, syncInventory } from "@/services/dropi/inventory";
+import { dropiProductIdSchema } from "@/lib/dropi-product-id";
 import { sendOrder } from "@/services/dropi/orders";
 import { diagnoseDropi } from "@/services/dropi/diagnostic";
 const id = z.string().min(1).max(100);
@@ -327,6 +328,14 @@ export async function POST(req: Request, ctx: Context) {
           })
           .parse(body);
         data = await importPage(d.offset, d.keywords);
+        break;
+      }
+      case "dropi-import-id": {
+        const d = z.object({ dropiId: dropiProductIdSchema }).parse(body);
+        await rateLimit(`dropi-import-id:${admin.id}`, 10, 60);
+        const product = await importDropiProductById(d.dropiId);
+        data = product;
+        entityId = product.id;
         break;
       }
       case "dropi-sync": {

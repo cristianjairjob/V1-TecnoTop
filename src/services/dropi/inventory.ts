@@ -4,6 +4,7 @@ import { slugify } from "@/lib/catalog-defaults";
 import { getDropiProduct, listDropiProducts } from "./products";
 import { safePayload, DropiProductData } from "./types";
 import { DropiError } from "./errors";
+import { dropiProductIdSchema } from "@/lib/dropi-product-id";
 const json = (v: unknown) => safePayload(v) as Prisma.InputJsonValue;
 export function productStock(p: DropiProductData) {
   return p.warehouse_product?.reduce((n, w) => n + w.stock, 0) ?? p.stock ?? 0;
@@ -85,6 +86,20 @@ export async function importDropiProduct(id: string) {
     }
     return product;
   });
+}
+export async function importDropiProductById(input: string) {
+  const id = dropiProductIdSchema.parse(input);
+  try {
+    const product = await importDropiProduct(id);
+    await db.syncLog.create({ data: { operation: "IMPORT_ID", status: "SUCCESS", count: 1 } });
+    return { id: product.id, dropiId: product.dropiId, name: product.name, status: product.status };
+  } catch (error) {
+    await db.syncLog.create({ data: {
+      operation: "IMPORT_ID", status: "ERROR", count: 0,
+      errorCode: error instanceof DropiError ? error.code : "IMPORT_ERROR",
+    } });
+    throw error;
+  }
 }
 export async function importPage(offset = 0, keywords = "") {
   let count = 0;
