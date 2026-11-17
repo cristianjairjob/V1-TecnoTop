@@ -19,7 +19,7 @@ export default async function Contact() {
         >
           <MessageCircle size={34} />
           <h2>Escríbenos por WhatsApp</h2>
-          <p>+57 304 593 9644</p>
+          <p>+{s.whatsapp || "573045939644"}</p>
           <span>
             Iniciar conversación <ArrowUpRight size={18} />
           </span>

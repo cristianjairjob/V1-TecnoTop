@@ -28,7 +28,7 @@ model Product {
   id String @id @default(cuid())
   dropiId String? @unique
   slug String @unique
-  name String
+  name String @db.VarChar(255)
   description String @db.Text
   images Json
   supplierPrice Decimal @default(0) @db.Decimal(12,2)
@@ -57,7 +57,7 @@ model ProductVariant {
   productId String
   product Product @relation(fields:[productId], references:[id], onDelete:Cascade)
   dropiId String
-  name String
+  name String @db.Text
   sku String?
   attributes Json
   stock Int @default(0)
@@ -151,7 +151,7 @@ model OrderItem {
   variantId String?
   dropiId String?
   dropiVariantId String?
-  name String
+  name String @db.Text
   quantity Int
   unitPrice Decimal @db.Decimal(12,2)
   supplierPrice Decimal @db.Decimal(12,2)
@@ -173,7 +173,7 @@ model TrackingEvent {
   orderId String
   order Order @relation(fields:[orderId],references:[id])
   status OrderStatus
-  detail String
+  detail String @db.Text
   source String
   createdAt DateTime @default(now())
 }
@@ -198,7 +198,7 @@ model DropiOrder {
 model Promotion {
   id String @id @default(cuid())
   code String @unique
-  title String
+  title String @db.VarChar(255)
   percent Int
   minimum Decimal @default(0) @db.Decimal(12,2)
   active Boolean @default(false)
@@ -232,7 +232,7 @@ model SyncLog {
 model AuditLog {
   id String @id @default(cuid())
   adminId String
-  action String
+  action String @db.Text
   entityId String
   createdAt DateTime @default(now())
 }

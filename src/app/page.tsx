@@ -34,7 +34,10 @@ export default async function Home() {
       take: 4,
     });
     if (top.length) {
-      const all = await publishedProducts({ take: 100 });
+      const all = await publishedProducts({
+        ids: top.map((t) => t.productId),
+        take: 4,
+      });
       groups.bestsellers = top.flatMap((t) =>
         all.filter((p) => p.id === t.productId),
       );

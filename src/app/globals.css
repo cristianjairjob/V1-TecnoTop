@@ -1865,3 +1865,16 @@ button:focus-visible {
     animation: none !important;
   }
 }
+.carousel-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.carousel-controls button {
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  padding: 9px;
+  background: white;
+  color: var(--deep);
+}

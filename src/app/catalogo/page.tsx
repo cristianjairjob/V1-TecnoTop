@@ -8,6 +8,7 @@ export default async function Catalog({
   searchParams: Promise<{
     q?: string;
     categoria?: string;
+    coleccion?: string;
     tipo?: string;
     pagina?: string;
   }>;
@@ -19,6 +20,7 @@ export default async function Catalog({
     publishedProducts({
       search: query.q,
       category: query.categoria,
+      collection: query.coleccion,
       kind: query.tipo,
       take: 24,
       skip: page * 24,
@@ -45,6 +47,9 @@ export default async function Catalog({
         <p>Explora, elige y conecta con lo que te gusta.</p>
       </div>
       <form className="catalog-filters">
+        {query.coleccion && (
+          <input type="hidden" name="coleccion" value={query.coleccion} />
+        )}
         <input
           name="q"
           defaultValue={query.q}
@@ -75,6 +80,13 @@ export default async function Catalog({
         </select>
         <button className="button">Filtrar</button>
       </form>
+      {query.coleccion && (
+        <p className="small">
+          <Link href={`/catalogo?categoria=${query.categoria ?? ""}`}>
+            Quitar filtro de colección
+          </Link>
+        </p>
+      )}
       <ProductGrid products={filtered} />
       <nav className="pagination" aria-label="Páginas">
         {page > 0 && <Link href={href(page - 1)}>← Anterior</Link>}

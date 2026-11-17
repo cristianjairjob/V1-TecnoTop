@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { db } from "@/lib/db";
-import { initialCategories } from "@/lib/catalog-defaults";
+import { initialCategories, slugify } from "@/lib/catalog-defaults";
 import { CategoryIcon } from "@/components/icons";
-import { ProductGrid } from "@/components/products";
+import { ProductCard, EmptyCatalog } from "@/components/products";
+import { CollectionCarousel } from "@/components/collection-carousel";
 import { publishedProducts } from "@/lib/catalog";
 export default async function CategoryPage({
   params,
@@ -27,7 +28,9 @@ export default async function CategoryPage({
   if (!category) notFound();
   const products = await publishedProducts({ category: slug, take: 200 });
   const collections = category.collections.map((c) =>
-    typeof c === "string" ? { id: c, name: c, products: [] } : c,
+    typeof c === "string"
+      ? { id: slugify(c), slug: `${slug}-${slugify(c)}`, name: c, products: [] }
+      : c,
   );
   return (
     <div className="wrap page-section">
@@ -60,15 +63,24 @@ export default async function CategoryPage({
         >
           <div className="section-heading">
             <h2>{c.name}</h2>
-            <Link href={`/catalogo?categoria=${slug}`} className="text-link">
+            <Link
+              href={`/catalogo?categoria=${slug}&coleccion=${c.slug}`}
+              className="text-link"
+            >
               Ver todos <ArrowRight size={17} />
             </Link>
           </div>
-          <ProductGrid
-            products={c.products.flatMap((cp) =>
-              products.filter((p) => p.id === cp.productId),
-            )}
-          />
+          {c.products.length ? (
+            <CollectionCarousel name={c.name}>
+              {c.products
+                .flatMap((cp) => products.filter((p) => p.id === cp.productId))
+                .map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+            </CollectionCarousel>
+          ) : (
+            <EmptyCatalog compact />
+          )}
         </section>
       ))}
     </div>

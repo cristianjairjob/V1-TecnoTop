@@ -62,12 +62,16 @@ export async function storeSettings() {
 }
 export async function publishedProducts({
   category,
+  collection,
+  ids,
   search,
   kind,
   take = 24,
   skip = 0,
 }: {
   category?: string;
+  collection?: string;
+  ids?: string[];
   search?: string;
   kind?: string;
   take?: number;
@@ -79,6 +83,14 @@ export async function publishedProducts({
       status: "PUBLISHED",
       salePrice: { gt: 0 },
       category: { visible: true, ...(category ? { slug: category } : {}) },
+      ...(collection
+        ? {
+            collections: {
+              some: { collection: { slug: collection, visible: true } },
+            },
+          }
+        : {}),
+      ...(ids ? { id: { in: ids } } : {}),
       ...(search ? { name: { contains: search.slice(0, 100) } } : {}),
       ...(kind === "featured" ? { featured: true } : {}),
       ...(kind === "popular" ? { popular: true } : {}),
