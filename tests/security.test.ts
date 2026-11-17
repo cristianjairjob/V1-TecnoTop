@@ -62,12 +62,17 @@ test("impide publicación sin clasificación, imágenes o precio de variante", (
 test("checkout exige consentimiento, email e idempotency UUID", () => {
   assert.equal(
     checkoutSchema.safeParse({
-      name: "Ana",
+      firstName: "Ana",
+      lastName: "Pérez",
       phone: "3045939644",
       email: "a@example.com",
       state: "Cundinamarca",
       city: "Bogotá",
       address: "Calle 10 número 20",
+      complement: "Centro",
+      establishment: "Casa particular",
+      reference: "Frente al parque",
+      requestedDate: "2099-12-31",
       items: [{ productId: "p", quantity: 1 }],
       consent: false,
       idempotencyKey: "123",

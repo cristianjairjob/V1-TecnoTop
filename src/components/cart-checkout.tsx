@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { money } from "@/lib/catalog-format";
+import { bogotaToday, formatDeliveryDate } from "@/lib/delivery";
+import { checkoutSchema } from "@/lib/validation";
 type Quote = {
   subtotal: number;
   discount: number;
@@ -32,6 +34,7 @@ export function CartCheckout({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [quoting, setQuoting] = useState(true);
+  const [requestedDate, setRequestedDate] = useState("");
   const serialized = JSON.stringify(
     items.map(({ productId, variantId, quantity }) => ({
       productId,
@@ -87,6 +90,8 @@ export function CartCheckout({
     const signature = JSON.stringify(body);
     let key = crypto.randomUUID();
     try {
+      const validation = checkoutSchema.safeParse({ ...body, idempotencyKey: key });
+      if (!validation.success) throw new Error(validation.error.issues[0].message);
       const saved = JSON.parse(
         sessionStorage.getItem("tecnotop-checkout") || "null",
       );
@@ -131,15 +136,18 @@ export function CartCheckout({
             <h2>¿Dónde recibes tu pedido?</h2>
             <p>Completa tus datos. Solo pagarás cuando recibas la compra.</p>
             <div className="form-grid">
-              <label className="span-two">
-                Nombre completo
+              <label>
+                Nombres
                 <input
-                  name="name"
-                  autoComplete="name"
+                  name="firstName"
+                  autoComplete="given-name"
                   required
-                  minLength={3}
-                  maxLength={120}
+                  maxLength={80}
                 />
+              </label>
+              <label>
+                Apellidos
+                <input name="lastName" autoComplete="family-name" required maxLength={80} />
               </label>
               <label>
                 Celular
@@ -196,11 +204,36 @@ export function CartCheckout({
                 Barrio y complemento
                 <input
                   name="complement"
-                  placeholder="Barrio, edificio, apartamento o indicaciones"
+                  placeholder="Barrio, edificio, apartamento o No aplica"
+                  required
                   maxLength={200}
                 />
               </label>
             </div>
+            <h3>INFORMACIÓN ADICIONAL DE ENTREGA</h3>
+            <div className="form-grid">
+              <label className="span-two">
+                Nombre del local o establecimiento
+                <input name="establishment" required maxLength={160}
+                  placeholder="Nombre del negocio, conjunto o Casa particular" />
+              </label>
+              <label className="span-two">
+                Referencia para encontrar la dirección
+                <input name="reference" required maxLength={300}
+                  placeholder="Al lado de la tienda D1, frente al parque…" />
+              </label>
+              <label className="span-two">
+                Fecha solicitada de entrega
+                <input name="requestedDate" type="date" lang="es-CO" required
+                  min={bogotaToday()} max="9999-12-31" value={requestedDate}
+                  onChange={(event) => setRequestedDate(event.target.value)}
+                  aria-describedby="delivery-date-help delivery-date-preview" />
+                <span id="delivery-date-preview" aria-live="polite">
+                  {requestedDate ? `Fecha solicitada: ${formatDeliveryDate(requestedDate)}` : "Formato: DD/MM/YYYY"}
+                </span>
+              </label>
+            </div>
+            <p id="delivery-date-help">La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</p>
             <h3>Método de envío y pago</h3>
             <div className="selected-method">
               <Truck size={22} />

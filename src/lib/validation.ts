@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deliverySchema, requestedDeliveryDateSchema } from "./delivery";
 export const phoneSchema = z
   .string()
   .transform((v) => v.replace(/[\s()+-]/g, "").replace(/^57(?=3\d{9}$)/, ""))
@@ -23,13 +24,17 @@ export const cartSchema = z
       ctx.addIssue({ code: "custom", message: "Productos duplicados." });
   });
 export const checkoutSchema = z.object({
-  name: z.string().trim().min(3).max(120),
+  firstName: z.string().trim().min(1, "Los nombres son obligatorios.").max(80),
+  lastName: z.string().trim().min(1, "Los apellidos son obligatorios.").max(80),
   phone: phoneSchema,
   email: z.email().max(180),
   state: z.string().trim().min(2).max(80),
   city: z.string().trim().min(2).max(80),
   address: z.string().trim().min(8).max(200),
-  complement: z.string().trim().max(200).default(""),
+  complement: z.string().trim().min(1).max(200),
+  establishment: deliverySchema.shape.establishment,
+  reference: deliverySchema.shape.reference,
+  requestedDate: requestedDeliveryDateSchema,
   items: cartSchema,
   promotionCode: z.string().max(50).default(""),
   idempotencyKey: z.uuid(),

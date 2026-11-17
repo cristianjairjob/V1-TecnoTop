@@ -10,6 +10,7 @@ import { getDropiProduct } from "@/services/dropi/products";
 import { productStock } from "@/services/dropi/inventory";
 import { safePayload } from "@/services/dropi/types";
 import { sendOrder } from "@/services/dropi/orders";
+import { createOrderDetails } from "./order-details";
 export async function quote(items: z.infer<typeof cartSchema>, code = "") {
   const products = await db.product.findMany({
     where: {
@@ -161,21 +162,17 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
               "El inventario cambió. Actualiza tu carrito.",
             );
         }
-        const customer = await tx.customer.create({
-          data: { name: input.name, email: input.email, phone: input.phone },
-        });
+        const number = `TT-${randomBytes(6).toString("hex").toUpperCase()}`;
+        const details = createOrderDetails(input, number);
+        const customer = await tx.customer.create({ data: details.customer });
         return tx.order.create({
           data: {
-            number: `TT-${randomBytes(6).toString("hex").toUpperCase()}`,
+            number,
             idempotencyKey,
             requestHash,
             customerId: customer.id,
-            address: {
-              state: input.state,
-              city: input.city,
-              address: input.address,
-              complement: input.complement,
-            },
+            address: details.address,
+            deliveryNotes: details.deliveryNotes,
             subtotal: q.subtotal,
             discount: q.discount,
             total: q.total,

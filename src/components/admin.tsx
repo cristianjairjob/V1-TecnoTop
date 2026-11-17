@@ -20,6 +20,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { money } from "@/lib/catalog-format";
+import { formatDeliveryDate } from "@/lib/delivery";
 type Row = Record<string, unknown>;
 const string = (r: Row, k: string) => String(r[k] ?? "");
 const rows = (v: unknown) => (Array.isArray(v) ? (v as Row[]) : []);
@@ -919,7 +920,8 @@ export function Admin() {
               {string(edit.customer as Row, "phone")} ·{" "}
               {string(edit.customer as Row, "email")}
             </p>
-            <p>Dirección: {Object.values(edit.address as Row).join(" · ")}</p>
+            <p>Dirección: {["address", "complement", "city", "state"].map((key) => string(edit.address as Row, key)).filter(Boolean).join(" · ")}</p>
+            <DeliveryDetails key={string(edit, "id")} order={edit} />
             {rows(edit.items).map((i) => (
               <p key={string(i, "id")}>
                 {string(i, "quantity")} × {string(i, "name")} ·{" "}
@@ -966,6 +968,38 @@ export function Admin() {
         )}
       </div>
     </div>
+  );
+}
+function DeliveryDetails({ order }: { order: Row }) {
+  const [copyStatus, setCopyStatus] = useState("");
+  const address = order.address as Row;
+  const delivery = (address.delivery ?? {}) as Row;
+  const buyer = (address.buyer ?? order.customer) as Row;
+  const notes = string(order, "deliveryNotes");
+  return (
+    <section aria-label="Información adicional de entrega">
+      <h3>Información adicional de entrega</h3>
+      <p>Nombres: {string(buyer, "firstName") || "Sin registrar por separado (pedido anterior)"}</p>
+      <p>Apellidos: {string(buyer, "lastName") || "Sin registrar por separado (pedido anterior)"}</p>
+      <p>Nombre del local: {string(delivery, "establishment") || "Sin registrar"}</p>
+      <p>Referencia: {string(delivery, "reference") || "Sin registrar"}</p>
+      <p>Fecha solicitada: {formatDeliveryDate(string(delivery, "requestedDate"))}</p>
+      <p>La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</p>
+      <h3>Notas para Dropi · Texto exacto del payload</h3>
+      {notes ? <>
+        <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit" }}>{notes}</pre>
+        <button type="button" onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(notes);
+            setCopyStatus("Notas copiadas.");
+          } catch {
+            setCopyStatus("No se pudo copiar automáticamente. Selecciona el texto para copiarlo.");
+          }
+        }}>Copiar notas</button>
+        <p role="status">{copyStatus}</p>
+      </> : <p>Pedido anterior sin notas estructuradas. Requiere revisión antes de enviarlo a Dropi.</p>}
+      <p>El estado de Dropi indica si el envío fue aceptado. Las notas se conservan aunque falle.</p>
+    </section>
   );
 }
 function SettingsEditor({

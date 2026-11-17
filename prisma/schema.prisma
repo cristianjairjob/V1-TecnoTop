@@ -96,6 +96,8 @@ model CollectionProduct {
   @@id([collectionId,productId])
 }
 model Customer {
+  firstName String? @db.VarChar(80)
+  lastName String? @db.VarChar(80)
   id String @id @default(cuid())
   name String
   email String
@@ -129,6 +131,7 @@ model Order {
   customerId String
   customer Customer @relation(fields:[customerId],references:[id])
   address Json
+  deliveryNotes String? @db.Text
   subtotal Decimal @db.Decimal(12,2)
   discount Decimal @default(0) @db.Decimal(12,2)
   shipping Decimal @default(0) @db.Decimal(12,2)
