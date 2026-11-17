@@ -177,5 +177,5 @@ test("demo product allows cart quotes but cannot create orders or contact Dropi"
   stub(db.product, "findMany", async () => [{ id: "product-test", slug: "auriculares-demo-tecnotop", name: "Demo", salePrice: 99900, stock: 20, variants: [] }]);
   stub(db, "$transaction", async () => assert.fail("No debe crear una orden"));
   mock.method(globalThis, "fetch", async () => assert.fail("No debe contactar a Dropi"));
-  await assert.rejects(checkout(valid()), /producto de demostración/);
+  await assert.rejects(checkout(checkoutSchema.parse(valid())), /producto de demostración/);
 });
