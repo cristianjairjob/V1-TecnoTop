@@ -1878,3 +1878,73 @@ button:focus-visible {
   background: white;
   color: var(--deep);
 }
+
+/* Shared announcement: seamless left-to-right motion with a cat-eye blue sheen. */
+.announcement.announcement-marquee {
+  height: auto;
+  position: relative;
+  isolation: isolate;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  min-height: 36px;
+  color: #fff;
+  background: linear-gradient(110deg, #031d45, #06478b 45%, #0879bd 65%, #032b61);
+  border-bottom: 1px solid #5bc9ff;
+}
+.announcement-marquee::before {
+  content: "";
+  position: absolute;
+  inset: -100% -60%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 41%, #4ecbff33 46%, #c4f2ff99 49.5%, #fff9 50%, #55d7ff55 51%, transparent 57%);
+  animation: announcement-sheen 7s ease-in-out infinite;
+  z-index: -1;
+}
+.announcement-track {
+  display: flex;
+  width: max-content;
+  animation: announcement-right 28s linear infinite;
+}
+.announcement-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-around;
+  gap: 30px;
+  min-width: max(100vw, 650px);
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .045em;
+  white-space: nowrap;
+}
+.announcement-group i { font-style: normal; color: #a9e9ff; }
+.announcement-accessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.announcement-marquee:hover .announcement-track,
+.announcement-marquee:focus-within .announcement-track,
+.announcement-marquee:hover::before,
+.announcement-marquee:focus-within::before { animation-play-state: paused; }
+@keyframes announcement-right {
+  from { transform: translateX(-33.333333%); }
+  to { transform: translateX(0); }
+}
+@keyframes announcement-sheen {
+  0%, 15% { transform: translateX(-35%); opacity: 0; }
+  30% { opacity: .8; }
+  70% { opacity: .8; }
+  85%, 100% { transform: translateX(35%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announcement-track { animation: none; width: 100%; }
+  .announcement-marquee::before { animation: none; opacity: .35; }
+  .announcement-group { min-width: 0; width: 100%; flex-wrap: wrap; gap: 6px 12px; white-space: normal; justify-content: center; }
+  .announcement-group:not(:first-child) { display: none; }
+  .announcement-group i:last-child { display: none; }
+}

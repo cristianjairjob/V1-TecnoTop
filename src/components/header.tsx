@@ -4,7 +4,6 @@ import {
   Search,
   ShoppingBag,
   Truck,
-  ArrowUpRight,
   Menu,
   X,
 } from "lucide-react";
@@ -19,11 +18,17 @@ export function Header({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="announcement">
-        <span>Envío gratis · Pago contraentrega</span>
-        <Link href="/seguimiento">
-          Sigue tu pedido <ArrowUpRight size={13} />
-        </Link>
+      <div className="announcement announcement-marquee" role="region" aria-label="Beneficios de comprar en TecnoTop" tabIndex={0}>
+        <span className="announcement-accessible">Envío gratis · Pago contraentrega · Envíos a todo el país</span>
+        <div className="announcement-track" aria-hidden="true">
+          {[0, 1, 2].map((copy) => (
+            <div className="announcement-group" key={copy}>
+              <span>Envío gratis</span><i>✦</i>
+              <span>Pago contraentrega</span><i>✦</i>
+              <span>Envíos a todo el país</span><i>✦</i>
+            </div>
+          ))}
+        </div>
       </div>
       <header className="site-header">
         <div className="header-main wrap">
