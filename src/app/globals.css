@@ -2009,3 +2009,53 @@ button:focus-visible {
  .product-benefits span { flex-direction: column; text-align: center; }
 }
 .product-offers label { flex-direction: row; }
+/* Purchase options inspired by the reference, using real catalog prices. */
+.purchase-card { background: #0c1e35; padding: 25px; border-radius: 22px; color: #f4f8ff; box-shadow: 0 12px 35px #03255212; }
+.purchase-card .product-unit-price { margin-bottom: 5px; gap: 14px; }
+.purchase-card .product-unit-price strong { color: #fff; font-size: clamp(29px, 3vw, 43px); letter-spacing: -.04em; }
+.purchase-card .product-unit-price span { display: flex; align-items: center; gap: 7px; color: #6de2b1; font-weight: 700; }
+.purchase-card .purchase-selection { color: #adbed3; font-size: 12px; margin: 0 0 28px; }
+.purchase-card .product-offers legend { text-align: left; color: #a7bad0; font-size: 11px; letter-spacing: .13em; margin-bottom: 20px; }
+.purchase-card .product-offers label { position: relative; padding: 20px 13px; margin: 0 0 20px; gap: 11px; background: #152a43; border: 1px solid #2d4158; border-radius: 15px; }
+.purchase-card .product-offers label.selected { border-color: #3caeff; background: #173650; box-shadow: inset 0 0 0 1px #3caeff; }
+.purchase-card .product-offers input { accent-color: #26a8ff; width: 21px; height: 21px; }
+.purchase-card .product-offers strong { font-size: 14px; line-height: 1.35; }
+.purchase-card .product-offers small { color: #afbed0; line-height: 1.4; font-size: 11px; }
+.purchase-card .product-offers em { color: #6de2b1; font-weight: 600; font-style: normal; display: inline-block; }
+.purchase-card .product-offers .offer-price { flex: 0 0 auto; text-align: right; }
+.purchase-card .offer-price b { font-size: 20px; letter-spacing: -.03em; }
+.purchase-card .offer-price small { color: #6de2b1; font-weight: 700; }
+.purchase-card .offer-price del { display: block; color: #a8b5c7; font-size: 11px; margin-top: 3px; }
+.purchase-card .product-offers .offer-badge { position: absolute; top: -11px; right: 12px; display: flex; align-items: center; gap: 4px; background: #3caeff; color: #061c32; font-size: 9px; font-weight: 800; letter-spacing: .04em; border-radius: 20px; padding: 4px 9px; }
+.purchase-card .product-variants legend { font-size: 11px; color: #a7bad0; letter-spacing: .05em; }
+.purchase-card .product-variants legend span { color: #fff; }
+.purchase-card .product-variants button { background: transparent; border-color: #3c526b; color: #fff; border-radius: 28px; font-weight: 700; padding: 11px 22px; }
+.purchase-card .product-variants button[aria-pressed=true] { background: #eaf5ff; color: #102942; box-shadow: none; border-color: #fff; }
+.purchase-delivery-note { display: flex; gap: 9px; justify-content: center; align-items: center; font-size: 11px; background: #13344a; border: 1px solid #286385; color: #daefff; padding: 14px 10px; border-radius: 12px; margin: 0 0 16px; }
+.purchase-delivery-note svg { flex-shrink: 0; color: #42b4ff; }
+.purchase-delivery-note strong { color: #6de2b1; font-weight: 600; }
+.purchase-card .purchase-custom-quantity { display: flex; flex-direction: row; align-items: center; justify-content: space-between; color: #c0d0e2; font-size: 11px; margin-bottom: 14px; }
+.purchase-custom-quantity input { width: 68px; padding: 8px 10px; border-radius: 9px; background: #18334e; color: white; border-color: #3a5874; }
+.product-page .purchase-card .buy-actions .button { border-radius: 13px; font-size: 20px; padding: 15px; background: linear-gradient(110deg,#049be9,#0756dc); min-height: 72px; }
+.purchase-card .buy-actions small { display: block; font-size: 11px; margin-top: 4px; font-weight: 500; }
+.purchase-card .shipping-note { color: #b4c7da; justify-content: center; font-size: 11px; margin-bottom: 0; }
+.purchase-card [role=status]:empty { display: none; }
+.purchase-card [role=status] { color: #ffdc9b; }
+.purchase-card .demo-purchase-notice { color: #c5e6ff; border: 1px dashed #397396; padding: 10px; border-radius: 9px; font-size: 11px; line-height: 1.6; margin: 0 0 16px; }
+.purchase-support { margin: 20px 0 28px; }
+.purchase-trust-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid #cce3f5; background: #ebf6ff; border-radius: 19px; padding: 20px 9px; gap: 10px; }
+.purchase-trust-grid > div, .purchase-trust-grid > a { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; }
+.purchase-trust-grid strong { font-size: 12px; line-height: 1.35; }
+.purchase-trust-grid small { font-size: 10px; color: #567086; }
+.trust-icon { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 50%; background: #d1eaff; color: #0074d9; margin-bottom: 4px; }
+.trust-icon.whatsapp { background: #16bf66; color: #fff; box-shadow: 0 0 0 6px #16bf6618; }
+.purchase-arrival { border: 1px solid #cce3f5; border-radius: 17px; padding: 19px; margin-top: 14px; background: #f9fcff; }
+.product-page .purchase-arrival h2 { display: flex; align-items: center; gap: 9px; font-size: 16px; margin: 0 0 12px; }
+.purchase-arrival h2 svg, .purchase-arrival > div svg { color: #0081e7; flex-shrink: 0; }
+.purchase-arrival p { font-size: 12px; line-height: 1.6; margin: 0 0 12px; }
+.purchase-arrival > div { display: flex; gap: 8px; align-items: center; border-top: 1px dashed #c5dced; border-bottom: 1px dashed #c5dced; padding: 13px 0; font-size: 11px; }
+.purchase-arrival > div span { flex: 1; }
+.purchase-arrival a { color: #006fc9; font-weight: 700; white-space: nowrap; }
+.purchase-arrival > small { display: block; font-size: 10px; color: #62778c; line-height: 1.6; margin-top: 11px; }
+.purchase-policy-link { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 13px; margin-top: 15px; font-size: 11px; color: #176446; border: 1px solid #bbdfd0; border-radius: 30px; background: #edf9f2; }
+@media(max-width:480px) { .purchase-card { padding: 19px 14px; border-radius: 17px; } .purchase-card .product-offers strong { font-size: 12px; } .purchase-card .offer-price b { font-size: 18px; } .purchase-card .product-offers label { padding: 20px 10px; gap: 9px; } .purchase-card .product-offers small { font-size: 10px; } .purchase-trust-grid strong { font-size: 11px; } }

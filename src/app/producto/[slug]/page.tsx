@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Truck, ShieldCheck, Check, PackageCheck } from "lucide-react";
+import { Truck, ShieldCheck, Check, PackageCheck, MessageCircle, Banknote, MapPin } from "lucide-react";
 import { db } from "@/lib/db";
 import { AddToCart } from "@/components/add-to-cart";
 import { ProductGallery } from "@/components/product-gallery";
+import { storeSettings } from "@/lib/catalog";
 export default async function ProductPage({
   params,
 }: {
@@ -17,6 +18,8 @@ export default async function ProductPage({
   });
   if (!p) notFound();
   const images = Array.isArray(p.images) ? p.images.map(String) : [];
+  const settings = await storeSettings();
+  const whatsapp = (settings.whatsapp || "573045939644").replace(/\D/g, "");
   return (
     <div className="product-page"><div className="wrap page-section">
       <div className="breadcrumb">
@@ -38,6 +41,8 @@ export default async function ProductPage({
               name: p.name,
               image: images[0] ?? "",
               price: Number(p.salePrice),
+              previousPrice: Number(p.previousPrice),
+              demo: p.slug === "auriculares-demo-tecnotop",
               stock: p.stock,
               variants: p.variants.map((v) => ({
                 id: v.id,
@@ -47,13 +52,14 @@ export default async function ProductPage({
               })),
             }}
           />
-          <div className="product-assurances">
-            <span>
-              <Truck size={28} /> Envíos a todo el país
-            </span>
-            <span>
-              <ShieldCheck size={28} /> Contraentrega
-            </span>
+          <div className="purchase-support">
+            <div className="purchase-trust-grid">
+              <div><span className="trust-icon"><Truck /></span><strong>Envíos a Colombia</strong><small>Gratis para ti</small></div>
+              <div><span className="trust-icon"><Banknote /></span><strong>Pago contraentrega</strong><small>Pagas al recibir</small></div>
+              <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, quiero información sobre ${p.name}`)}`} target="_blank" rel="noopener noreferrer"><span className="trust-icon whatsapp"><MessageCircle /></span><strong>Soporte por WhatsApp</strong><small>Hablemos de tu compra ↗</small></a>
+            </div>
+            <div className="purchase-arrival"><h2><Truck size={20} /> ¿Cuándo me llega?</h2><p>El plazo depende de tu ciudad, la disponibilidad y la transportadora.</p><div><MapPin size={18} /><span>Consulta el plazo para tu dirección</span><a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, quiero consultar el plazo de envío de ${p.name} a mi ciudad.`)}`} target="_blank" rel="noopener noreferrer">Consultar ↗</a></div><small>La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</small></div>
+            <Link className="purchase-policy-link" href="/politicas"><ShieldCheck size={19} /> Consulta garantías, cambios y devoluciones →</Link>
           </div>
           <h2>Conoce los detalles</h2>
           <p className="product-description">
