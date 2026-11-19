@@ -1,4 +1,4 @@
-export const CHECKOUT_CYCLE_MS = 2 * 60 * 60 * 1000;
+export const CHECKOUT_CYCLE_MS = (60 * 60 + 57 * 60 + 37) * 1000;
 export function cycleSeconds(start: number, now: number) {
   const elapsed = Math.max(0, now - start);
   return Math.ceil((CHECKOUT_CYCLE_MS - (elapsed % CHECKOUT_CYCLE_MS)) / 1000);
