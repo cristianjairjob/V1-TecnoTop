@@ -2136,3 +2136,5 @@ button:focus-visible {
   .product-warranty { gap: 12px; padding: 16px 12px; }
   .warranty-seal { width: 58px; height: 58px; }
 }
+.purchase-card .product-offers .offer-description { min-width: 0; }
+.purchase-card .product-offers .offer-free-shipping { white-space: normal; flex-wrap: wrap; max-width: 100%; }
