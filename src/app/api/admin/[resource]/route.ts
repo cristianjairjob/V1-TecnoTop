@@ -9,6 +9,7 @@ import { importPage, importDropiProductById, syncInventory } from "@/services/dr
 import { dropiProductIdSchema } from "@/lib/dropi-product-id";
 import { sendOrder } from "@/services/dropi/orders";
 import { diagnoseDropi } from "@/services/dropi/diagnostic";
+import { comboPriceSchema } from "@/lib/product-offers";
 const id = z.string().min(1).max(100);
 const text = z.string().trim().max(5000);
 const price = z.number().finite().nonnegative().max(999999999).nullable();
@@ -143,6 +144,11 @@ export async function POST(req: Request, ctx: Context) {
             description: text,
             salePrice: price,
             previousPrice: price,
+            combo2Price: comboPriceSchema,
+            combo3Price: comboPriceSchema,
+            buyersCount: z.number().int().min(0).max(2147483647).nullable().optional(),
+            pairBestSeller: z.boolean().optional(),
+            buyerAvatars: z.array(z.url().refine((s) => s.startsWith("https://"))).max(3).optional(),
             categoryId: id.nullable(),
             brand: z.string().max(100).nullable(),
             status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),

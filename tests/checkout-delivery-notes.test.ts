@@ -122,7 +122,7 @@ for (const fails of [false, true]) {
     let sent: Record<string, unknown> | undefined;
     let requests = 0;
     let creates = 0;
-    const product = { id: "product-test", status: "PUBLISHED", name: "Producto", salePrice: 50000, supplierPrice: 20000, supplierId: "2", dropiId: "1", stock: 10, variants: [], category: { visible: true }, dropi: { payload: {} } };
+    const product = { id: "product-test", status: "PUBLISHED", name: "Producto", salePrice: 50000, combo3Price: 100000, supplierPrice: 20000, supplierId: "2", dropiId: "1", stock: 10, variants: [], category: { visible: true }, dropi: { payload: {} } };
     stub(db.siteSetting, "findUnique", async () => ({ value: { policiesApproved: true } }));
     stub(db.product, "findMany", async () => [product]);
     stub(db.product, "findUniqueOrThrow", async () => product);
@@ -152,7 +152,7 @@ for (const fails of [false, true]) {
       requests++;
       return fails ? new Response("{}", { status: 401 }) : new Response(JSON.stringify({ isSuccess: true, objects: { id: "mock-order" } }));
     });
-    const input = checkoutSchema.parse(valid());
+    const input = checkoutSchema.parse({ ...valid(), items: [{ productId: "product-test", quantity: 3 }] });
     const result = await checkout(input);
     assert.ok(stored && sent);
     assert.equal(sent.notes, stored.deliveryNotes);
@@ -161,6 +161,10 @@ for (const fails of [false, true]) {
     assert.equal(sent.surname, input.lastName);
     assert.equal(result.shipping, 0);
     assert.equal(sent.payment_method_id, 1);
+    assert.equal(result.total, 100000);
+    const sentProducts = sent.products as { price: number; quantity: number }[];
+    assert.equal(sentProducts.reduce((sum, item) => sum + item.quantity, 0), 3);
+    assert.equal(sentProducts.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0), 10000000);
     assert.equal(requests, 1);
     await checkout(input);
     assert.equal(creates, 1, "El reintento idempotente no crea otro pedido");

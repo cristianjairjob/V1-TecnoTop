@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Truck, ShieldCheck, Check, PackageCheck, MessageCircle, Banknote, MapPin } from "lucide-react";
+import { Truck, ShieldCheck, Check, PackageCheck, MessageCircle, Banknote, BadgeCheck } from "lucide-react";
 import { db } from "@/lib/db";
 import { AddToCart } from "@/components/add-to-cart";
 import { ProductGallery } from "@/components/product-gallery";
@@ -20,6 +20,7 @@ export default async function ProductPage({
   const images = Array.isArray(p.images) ? p.images.map(String) : [];
   const settings = await storeSettings();
   const whatsapp = (settings.whatsapp || "573045939644").replace(/\D/g, "");
+  const buyerAvatars = Array.isArray(p.buyerAvatars) ? p.buyerAvatars.map(String).filter((url) => url.startsWith("https://")).slice(0, 3) : [];
   return (
     <div className="product-page"><div className="wrap page-section">
       <div className="breadcrumb">
@@ -33,6 +34,7 @@ export default async function ProductPage({
         <div className="product-information">
           <span className="eyebrow">{p.brand || p.category?.name}</span>
           <h1>{p.name}</h1>
+          {Number(p.buyersCount) > 0 && <div className="product-social-proof"><div className="buyer-avatars" aria-hidden="true">{buyerAvatars.map((url, i) => <img key={`${url}-${i}`} src={url} alt="" width={42} height={42} loading="lazy" />)}</div><BadgeCheck size={23} /><span><strong>{Number(p.buyersCount).toLocaleString("es-CO")}</strong> personas ya compraron este producto</span></div>}
           <ul className="product-highlights"><li><Check /> Envío gratis a todo Colombia</li><li><Check /> Compra con pago contraentrega</li><li><Check /> Elige tu variante y cantidad disponible</li></ul>
           <AddToCart
             key={p.id}
@@ -42,6 +44,9 @@ export default async function ProductPage({
               image: images[0] ?? "",
               price: Number(p.salePrice),
               previousPrice: Number(p.previousPrice),
+              combo2Price: p.combo2Price == null ? null : Number(p.combo2Price),
+              combo3Price: p.combo3Price == null ? null : Number(p.combo3Price),
+              pairBestSeller: p.pairBestSeller,
               demo: p.slug === "auriculares-demo-tecnotop",
               stock: p.stock,
               variants: p.variants.map((v) => ({
@@ -58,7 +63,7 @@ export default async function ProductPage({
               <div><span className="trust-icon"><Banknote /></span><strong>Pago contraentrega</strong><small>Pagas al recibir</small></div>
               <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, quiero información sobre ${p.name}`)}`} target="_blank" rel="noopener noreferrer"><span className="trust-icon whatsapp"><MessageCircle /></span><strong>Soporte por WhatsApp</strong><small>Hablemos de tu compra ↗</small></a>
             </div>
-            <div className="purchase-arrival"><h2><Truck size={20} /> ¿Cuándo me llega?</h2><p>El plazo depende de tu ciudad, la disponibilidad y la transportadora.</p><div><MapPin size={18} /><span>Consulta el plazo para tu dirección</span><a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, quiero consultar el plazo de envío de ${p.name} a mi ciudad.`)}`} target="_blank" rel="noopener noreferrer">Consultar ↗</a></div><small>La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</small></div>
+            <div className="purchase-arrival"><h2><Truck size={20} /> ¿Cuándo me llega?</h2><dl className="delivery-estimates"><div><dt>Ciudades principales</dt><dd>2 a 3 días</dd></div><div><dt>Ciudades intermedias</dt><dd>3 a 5 días</dd></div><div><dt>Corregimientos y lugares lejanos</dt><dd>5 a 7 días</dd></div></dl><small>Días hábiles, según la operación de la transportadora.</small><small>Plazos estimados. La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</small></div>
             <Link className="purchase-policy-link" href="/politicas"><ShieldCheck size={19} /> Consulta garantías, cambios y devoluciones →</Link>
           </div>
           <h2>Conoce los detalles</h2>

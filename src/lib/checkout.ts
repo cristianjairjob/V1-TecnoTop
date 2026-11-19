@@ -11,6 +11,7 @@ import { productStock } from "@/services/dropi/inventory";
 import { safePayload } from "@/services/dropi/types";
 import { sendOrder } from "@/services/dropi/orders";
 import { createOrderDetails } from "./order-details";
+import { offerTotal, allocateUnitPrices } from "./product-offers";
 export async function quote(items: z.infer<typeof cartSchema>, code = "") {
   const products = await db.product.findMany({
     where: {
@@ -35,9 +36,10 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
     if (price <= 0) throw new AppError(409, "Producto sin precio confirmado.");
     if ((v?.stock ?? p.stock) < i.quantity)
       throw new AppError(409, `No hay suficiente inventario de ${p.name}.`);
-    return { ...i, product: p, variant: v, unitPrice: price };
+    const lineTotal = offerTotal(price, i.quantity, p);
+    return { ...i, product: p, variant: v, unitPrice: price, lineTotal };
   });
-  const subtotal = lines.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const subtotal = Math.round(lines.reduce((s, i) => s + i.lineTotal, 0) * 100) / 100;
   const promotion = code
     ? await db.promotion.findUnique({
         where: { code: code.trim().toUpperCase() },
@@ -54,14 +56,11 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
     throw new AppError(400, "El cupón no es válido para este pedido.");
   const discountedLines = lines.map((l) => ({
     ...l,
-    effectiveUnitPrice:
-      Math.round(
-        (l.unitPrice * 100 * (100 - (promotion?.percent ?? 0))) / 100,
-      ) / 100,
+    effectiveTotal: Math.round(l.lineTotal * (100 - (promotion?.percent ?? 0))) / 100,
   }));
   const total =
     discountedLines.reduce(
-      (n, l) => n + Math.round(l.effectiveUnitPrice * 100) * l.quantity,
+      (n, l) => n + Math.round(l.effectiveTotal * 100),
       0,
     ) / 100;
   const discount = Math.round((subtotal - total) * 100) / 100;
@@ -149,6 +148,8 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
                 "La variante cambió. Actualiza tu carrito.",
               );
           }
+          if (offerTotal(l.unitPrice, l.quantity, p) !== l.lineTotal)
+            throw new AppError(409, "El precio del combo cambió. Actualiza tu carrito.");
           const result = l.variantId
             ? await tx.productVariant.updateMany({
                 where: { id: l.variantId, stock: { gte: l.quantity } },
@@ -182,21 +183,21 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
             promotionCode: q.promotion?.code,
             privacyVersion: "v1",
             items: {
-              create: q.lines.map((l) => ({
+              create: q.lines.flatMap((l) => allocateUnitPrices(l.effectiveTotal, l.quantity).map((part) => ({
                 productId: l.product.id,
                 variantId: l.variant?.id,
                 dropiId: l.product.dropiId,
                 dropiVariantId: l.variant?.dropiId,
                 name: `${l.product.name}${l.variant ? " · " + l.variant.name : ""}`,
-                quantity: l.quantity,
-                unitPrice: l.effectiveUnitPrice,
+                quantity: part.quantity,
+                unitPrice: part.unitPrice,
                 supplierPrice:
                   l.variant?.supplierPrice ?? l.product.supplierPrice,
                 supplierId: l.product.supplierId,
                 snapshot: safePayload(
                   l.product.dropi?.payload ?? {},
                 ) as Prisma.InputJsonValue,
-              })),
+              }))),
             },
             events: {
               create: {

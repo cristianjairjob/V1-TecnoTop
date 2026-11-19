@@ -217,6 +217,10 @@ export function Admin() {
       value = {
         ...r,
         salePrice: r.salePrice === null ? null : Number(r.salePrice),
+        combo2Price: r.combo2Price == null ? null : Number(r.combo2Price),
+        combo3Price: r.combo3Price == null ? null : Number(r.combo3Price),
+        buyersCount: r.buyersCount == null ? null : Number(r.buyersCount),
+        buyerAvatars: Array.isArray(r.buyerAvatars) ? r.buyerAvatars : [],
         previousPrice:
           r.previousPrice === null ? null : Number(r.previousPrice),
         images: rows([]),
@@ -484,7 +488,7 @@ export function Admin() {
                       onChange={(v) => update("brand", v)}
                     />
                     <Field
-                      label="Precio de venta COP"
+                      label="Precio individual (1 unidad) COP"
                       type="number"
                       value={edit.salePrice}
                       onChange={(v) => update("salePrice", v)}
@@ -495,6 +499,11 @@ export function Admin() {
                       value={edit.previousPrice}
                       onChange={(v) => update("previousPrice", v)}
                     />
+                    <Field label="Combo pareja: total por 2 unidades COP" type="number" value={edit.combo2Price} onChange={(v) => update("combo2Price", v)} />
+                    <Field label="Combo familiar: total por 3 unidades COP" type="number" value={edit.combo3Price} onChange={(v) => update("combo3Price", v)} />
+                    <p className="span-two">Introduce el precio TOTAL del combo, no el precio por unidad. En blanco se calcula con el precio individual. Los combos se aplican a exactamente 2 o 3 unidades de la misma variante; otras cantidades usan el precio individual. El precio del combo es común a todas las variantes de este producto.</p>
+                    <Field label="Compradores verificados de este producto" type="number" value={edit.buyersCount} onChange={(v) => update("buyersCount", v)} />
+                    <Field label="Combo pareja: es el más comprado (dato verificado)" type="checkbox" value={edit.pairBestSeller} onChange={(v) => update("pairBestSeller", v)} />
                     <p>
                       Costo proveedor: {money(Number(edit.supplierPrice))}
                       <br />

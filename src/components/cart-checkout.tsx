@@ -14,6 +14,7 @@ import { money } from "@/lib/catalog-format";
 import { bogotaToday, formatDeliveryDate } from "@/lib/delivery";
 import { checkoutSchema } from "@/lib/validation";
 type Quote = {
+  lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number }[];
   subtotal: number;
   discount: number;
   shipping: number;
@@ -269,7 +270,7 @@ export function CartCheckout({
                 />
                 <div>
                   <h3>{i.name}</h3>
-                  <p>{money(i.price)}</p>
+                  <p>{quoting ? "Actualizando precio…" : quote ? `${money(quote.lines.find((line) => line.productId === i.productId && (line.variantId || undefined) === i.variantId)?.effectiveTotal ?? 0)} · Total por ${i.quantity} ${i.quantity === 1 ? "unidad" : "unidades"}` : "Precio pendiente de validar"}</p>
                   <label>
                     Cantidad{" "}
                     <input

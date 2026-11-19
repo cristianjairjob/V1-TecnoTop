@@ -26,6 +26,8 @@ export async function POST(req: Request) {
         name: l.product.name,
         unitPrice: l.unitPrice,
         quantity: l.quantity,
+        lineTotal: l.lineTotal,
+        effectiveTotal: l.effectiveTotal,
       })),
     });
   } catch (e) {

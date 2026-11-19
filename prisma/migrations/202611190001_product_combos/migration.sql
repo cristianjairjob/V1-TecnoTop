@@ -1,0 +1,6 @@
+ALTER TABLE `Product`
+  ADD COLUMN `combo2Price` DECIMAL(12,2) NULL,
+  ADD COLUMN `combo3Price` DECIMAL(12,2) NULL,
+  ADD COLUMN `buyersCount` INTEGER NULL,
+  ADD COLUMN `pairBestSeller` BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN `buyerAvatars` JSON NULL;
