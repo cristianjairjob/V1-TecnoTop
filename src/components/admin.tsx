@@ -1013,8 +1013,9 @@ function DeliveryDetails({ order }: { order: Row }) {
       <h3>Información adicional de entrega</h3>
       <p>Nombres: {string(buyer, "firstName") || "Sin registrar por separado (pedido anterior)"}</p>
       <p>Apellidos: {string(buyer, "lastName") || "Sin registrar por separado (pedido anterior)"}</p>
-      <p>Nombre del local: {string(delivery, "establishment") || "Sin registrar"}</p>
-      <p>Referencia: {string(delivery, "reference") || "Sin registrar"}</p>
+      {delivery.version === 2 && <p>Notas adicionales: {string(delivery, "additionalNotes") || "Sin indicaciones adicionales"}</p>}
+      {delivery.version !== 2 && <><p>Nombre del local: {string(delivery, "establishment") || "Sin registrar"}</p>
+      <p>Referencia: {string(delivery, "reference") || "Sin registrar"}</p></>}
       <p>Fecha solicitada: {formatDeliveryDate(string(delivery, "requestedDate"))}</p>
       <p>La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</p>
       <h3>Notas para Dropi · Texto exacto del payload</h3>

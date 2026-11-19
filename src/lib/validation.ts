@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { deliverySchema, requestedDeliveryDateSchema } from "./delivery";
+import { currentDeliverySchema, requestedDeliveryDateSchema } from "./delivery";
 import { isColombiaLocation } from "./colombia-locations";
 export const optionalEmailSchema = z.string().trim().pipe(z.union([z.email().max(180), z.literal("")])).default("");
 export const phoneSchema = z
@@ -34,8 +34,7 @@ export const checkoutSchema = z.object({
   city: z.string().trim().min(2).max(80),
   address: z.string().trim().min(8).max(200),
   complement: z.string().trim().min(1).max(200),
-  establishment: deliverySchema.shape.establishment,
-  reference: deliverySchema.shape.reference,
+  additionalNotes: currentDeliverySchema.shape.additionalNotes,
   requestedDate: requestedDeliveryDateSchema,
   items: cartSchema,
   promotionCode: z.string().max(50).default(""),

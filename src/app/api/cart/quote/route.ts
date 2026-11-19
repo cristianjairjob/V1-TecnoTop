@@ -17,6 +17,8 @@ export async function POST(req: Request) {
       .parse(await readBody(req));
     const q = await quote(data.items, data.promotionCode);
     return NextResponse.json({
+      baseSubtotal: q.baseSubtotal,
+      savings: q.savings,
       subtotal: q.subtotal,
       discount: q.discount,
       shipping: 0,

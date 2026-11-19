@@ -1,79 +1,40 @@
-# Checkout y notas de entrega V1
+# Checkout y notas de entrega
 
 Rama: `feature/checkout-delivery-notes-v1`.
 
-El checkout exige nombres y apellidos separados, teléfono colombiano,
-departamento, ciudad, dirección, complemento, establecimiento, referencia y fecha
-solicitada. El correo es opcional; cuando falta se conserva vacío, sin inventar direcciones.
-La fecha se guarda como `YYYY-MM-DD`, se presenta como `DD/MM/YYYY` y
-se valida contra el día actual de `America/Bogota`. La interfaz aclara que no es
-una promesa de entrega.
+## Formulario actual
 
-Comprar ahora abre `/checkout?product=…&quantity=…&variant=…` sin modificar el carrito.
-El resumen permite sustituir la cantidad por 1, 2 o 3 y vuelve a cotizar desde MySQL.
-Los departamentos y municipios proceden del listado DIVIPOLA del DANE publicado en
-https://www.datos.gov.co/Mapas-Nacionales/DIVIPOLA-C-digos-municipios/gdxc-w37w,
-incluido en `src/data/colombia-locations.json`. El servidor valida que ciudad y departamento coincidan.
+Nombres y apellidos separados, celular colombiano, departamento/municipio,
+dirección y complemento obligatorios. Correo sin asterisco, notas adicionales y
+fecha solicitada opcionales. Si se elige fecha, debe ser al menos cinco días
+calendario después del día actual en America/Bogota. Validación tanto en HTML
+como en el servidor; formato almacenado YYYY-MM-DD. No es una promesa de entrega.
 
-## Archivos
-
-| Archivo | Cambio |
-| --- | --- |
-| `src/components/cart-checkout.tsx` | Campos requeridos, selector de fecha, aclaración y validación previa al envío. |
-| `src/components/admin.tsx` | Datos de entrega, notas exactas y botón para copiar; distingue registros históricos sin datos. |
-| `src/lib/validation.ts` | Validaciones obligatorias del servidor y del formulario. |
-| `src/lib/delivery.ts` | Fecha de Colombia, formato de presentación y construcción única de notas. |
-| `src/lib/order-details.ts` | Snapshot de comprador, dirección y entrega; notas persistentes. |
-| `src/lib/checkout.ts` | Guarda el snapshot y las notas en la transacción existente. |
-| `src/services/dropi/order-payload.ts` | Valida datos guardados y copia las notas literalmente al payload. |
-| `src/services/dropi/orders.ts` | Construye y valida el payload antes de reclamar el envío. |
-| `prisma/schema.prisma` | Nombres/apellidos separados y columna de notas. |
-| `prisma/migrations/202611170003_checkout_delivery_notes/migration.sql` | Migración aditiva, sin borrar ni transformar datos anteriores. |
-| `tests/checkout-delivery-notes.test.ts` | 23 pruebas nuevas de validación, persistencia, payload e idempotencia. |
-| `tests/security.test.ts` | Actualiza datos del checkout en la prueba existente. |
-| `.github/workflows/ci.yml` | Ejecuta CI también en la rama solicitada. |
-| `docs/checkout-delivery-notes-v1.md` | Este informe. |
+Comprar ahora abre checkout con el producto y cantidad seleccionados sin añadir
+al carrito. Las tres promociones sustituyen la cantidad y se cotizan desde MySQL.
+El subtotal visible corresponde al precio base; el descuento incluye el ahorro
+por precio anterior/combo más el cupón. El total de pago no cambia. El consentimiento
+obligatorio aparece debajo del total y sigue asociado al formulario mediante `form`.
 
 ## Persistencia y compatibilidad
 
-`Customer.name` se conserva. Se agregan `firstName` y `lastName` anulables para no
-inventar datos históricos. Cada nuevo pedido guarda `address.buyer` (nombres,
-apellidos, teléfono y correo), `address.delivery` (establecimiento, referencia y
-fecha) y `Order.deliveryNotes` en la misma transacción que reserva inventario.
+Los nuevos pedidos guardan address.delivery con version=2, additionalNotes y
+requestedDate, además del snapshot original del comprador. Order.deliveryNotes
+contiene las notas opcionales, fecha (o ausencia explícita) y número interno.
+El texto persistido se envía literalmente como notes a Dropi. No se inventan fechas.
+El formato histórico de establecimiento/referencia sigue validándose y enviándose
+sin modificaciones. No requiere migraciones ni transforma pedidos históricos.
 
-El payload de `POST orders/myorders` usa `notes` sin parámetros adicionales.
-El texto contiene LOCAL, REFERENCIA, FECHA SOLICITADA DE ENTREGA y PEDIDO TECNOTOP.
-Antes del envío se comprueba que el texto almacenado coincide con los datos
-estructurados. No se divide ningún nombre completo. Un pedido antiguo incompleto
-requiere revisión y se bloquea antes de pasar a SENDING. Una fecha histórica válida
-no se recalcula ni se descarta durante un reintento. Las notas no se borran si
-Dropi rechaza el pedido o falla la conexión.
+Los departamentos y municipios son el listado DIVIPOLA DANE incluido en
+src/data/colombia-locations.json. El servidor valida la correspondencia.
 
-## Verificación local
+## Verificación
 
-- `npm run typecheck`: correcto.
-- `npm run lint`: correcto.
-- `npm test`: 37 pruebas correctas (14 existentes y 23 nuevas).
-- `npm run build`: correcto con Node.js 22.
-- `git diff --check`: correcto.
+Typecheck, lint, 58 pruebas y build Node.js 22. Pruebas con MySQL/HTTP simulados:
+campos requeridos, opcionales, límite de cinco días, cambio de año/día colombiano,
+notas guardadas/enviadas, compatibilidad histórica, cupón y ahorro de combos,
+idempotencia y bloqueo de productos de demostración.
 
-Las pruebas cubren campos vacíos/incorrectos, fechas pasadas e inexistentes,
-fecha válida, cambio de día en Colombia, nombres compuestos, formato exacto,
-notas incompletas, conservación histórica, notas persistidas antes del POST,
-igualdad entre texto almacenado/enviado, respuesta aceptada y error 401 simulados,
-reintentos idempotentes, cambios de solicitud, contraentrega y envío gratuito.
-MySQL y HTTP se sustituyen por mocks en las pruebas de pedidos: no se crean pedidos
-reales ni se modifica la configuración de producción.
-
-La compilación local no tiene DATABASE_URL y omite migraciones. En Hostinger,
-el script de compilación existente ejecuta `prisma migrate deploy` sobre MySQL.
-La carga del checkout vacío se comprobó en navegador local; la revisión visual
-del formulario con productos y del detalle administrativo con pedidos reales
-no se realizó porque no hay registros de prueba cargados.
-
-## Estado operativo requerido
-
-Conservar `CHECKOUT_ENABLED=false` y `DROPI_ORDERS_ENABLED=false`.
-No se cambia ninguna variable de entorno ni la tarea de inventario cada ocho horas.
-La conexión real con Dropi permanece pendiente; estas pruebas no verifican su
-aceptación real de pedidos ni activan ventas.
+No se crean pedidos reales ni se modifican variables de entorno, controles de
+activación de ventas o la tarea de inventario. La prueba no confirma que Dropi
+acepte pedidos reales.

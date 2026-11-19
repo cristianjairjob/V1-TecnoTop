@@ -47,7 +47,7 @@ export function AddToCart({
           const savings = Math.max(0, Math.round((comparison - total) * 100) / 100);
           return <label key={count} className={`${quantity === count ? "selected" : ""} ${count === 2 ? "pair-offer" : ""}`}>
           <input type="radio" name={`quantity-${product.id}`} checked={quantity === count} disabled={stock < count} onChange={() => {setQuantity(count); setMessage("");}} />
-          <span className="offer-description"><strong>{count === 1 ? "Individual · 1 unidad" : count === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small><span className="offer-free-shipping"><Truck size={13} /> ENVÍO GRATIS</span>{savings > 0 && <em>Ahorras {money(savings)}</em>}</small></span>
+          <span className="offer-description"><strong>{count === 1 ? "Individual · 1 unidad" : count === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small><span className="offer-free-shipping"><Truck size={13} /> ENVÍO GRATIS · PAGO CONTRAENTREGA</span>{savings > 0 && <em>Ahorras {money(savings)}</em>}</small></span>
           <span className="offer-price"><b>{money(total)}</b>{count > 1 && <small>{money(total / count)} c/u</small>}{savings > 0 && <del>{money(comparison)}</del>}</span>
           {count === 2 ? <span className="offer-badge pair-popular-badge"><Flame size={17} /> {product.pairBestSeller ? "EL MÁS COMPRADO" : "COMBO DESTACADO"}</span> : quantity === count && <span className="offer-badge"><Check size={12} /> SELECCIONADO</span>}
         </label>;})}

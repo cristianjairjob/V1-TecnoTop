@@ -21,3 +21,8 @@ export function allocateUnitPrices(total: number, quantity: number) {
     ...(extra ? [{ quantity: extra, unitPrice: (low + 1) / 100 }] : []),
   ];
 }
+
+export function referenceLineTotal(unitPrice: number, previousPrice: unknown, quantity: number, lineTotal: number) {
+  const previous = Number(previousPrice);
+  return Math.round(Math.max(lineTotal, Math.max(unitPrice, Number.isFinite(previous) ? previous : 0) * quantity) * 100) / 100;
+}

@@ -5,18 +5,19 @@ import { useRouter } from "next/navigation";
 import {
   Trash2,
   ArrowRight,
-  Truck,
   LockKeyhole,
   ShoppingBag,
 } from "lucide-react";
 import { useCart, type CartLine } from "./cart-provider";
 import { money } from "@/lib/catalog-format";
-import { bogotaToday, formatDeliveryDate } from "@/lib/delivery";
+import { minimumDeliveryDate, formatDeliveryDate } from "@/lib/delivery";
 import { checkoutSchema } from "@/lib/validation";
 import { departments, citiesForDepartment } from "@/lib/colombia-locations";
 import { directCheckoutUrl } from "@/lib/direct-checkout";
 type Quote = {
   lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number; pairBestSeller: boolean; offers: { quantity: number; total: number; available: boolean }[] }[];
+  baseSubtotal: number;
+  savings: number;
   subtotal: number;
   discount: number;
   shipping: number;
@@ -178,7 +179,7 @@ export function CartCheckout({
                 />
               </label>
               <label>
-                Correo electrónico (opcional)
+                Correo electrónico
                 <input
                   name="email"
                   type="email"
@@ -227,52 +228,28 @@ export function CartCheckout({
                 />
               </label>
             </div>
-            <h3>INFORMACIÓN ADICIONAL DE ENTREGA</h3>
-            <p className="small">Completa estos datos para que el proveedor pueda preparar la entrega.</p>
             <div className="form-grid">
               <label className="span-two">
-                Nombre del local o establecimiento
-                <input name="establishment" required maxLength={160}
-                  placeholder="Nombre del negocio, conjunto o Casa particular" />
+                Notas adicionales (opcional)
+                <textarea name="additionalNotes" maxLength={1000} rows={3} placeholder="Escribe aquí cualquier indicación adicional para la entrega." />
               </label>
-              <label className="span-two">
-                Referencia para encontrar la dirección
-                <input name="reference" required maxLength={300}
-                  placeholder="Al lado de la tienda D1, frente al parque…" />
-              </label>
-              <label className="span-two">
-                Fecha solicitada de entrega
-                <input name="requestedDate" type="date" lang="es-CO" required
-                  min={bogotaToday()} max="9999-12-31" value={requestedDate}
+              <label className="span-two delivery-date-box">
+                Fecha solicitada de entrega (opcional)
+                <span>Este es el día que tengas disponible para recibir el pedido.</span>
+                <input name="requestedDate" type="date" lang="es-CO"
+                  min={minimumDeliveryDate()} max="9999-12-31" value={requestedDate}
                   onChange={(event) => setRequestedDate(event.target.value)}
                   aria-describedby="delivery-date-help delivery-date-preview" />
                 <span id="delivery-date-preview" aria-live="polite">
-                  {requestedDate ? `Fecha solicitada: ${formatDeliveryDate(requestedDate)}` : "Formato: DD/MM/YYYY"}
+                  {requestedDate ? "Fecha solicitada: " + formatDeliveryDate(requestedDate) : "Formato: DD/MM/YYYY"}
                 </span>
+                <span id="delivery-date-help">Puedes elegir una fecha a partir de {formatDeliveryDate(minimumDeliveryDate())}, dentro de 5 días, debido al tiempo de entrega de la transportadora. La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</span>
               </label>
             </div>
-            <p id="delivery-date-help">La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</p>
             <h3>Método de envío y pago</h3>
-            <div className="selected-method">
-              <Truck size={22} />
-              <div>
-                <strong>Envío estándar · Gratis</strong>
-                <p>
-                  Pago contraentrega. La disponibilidad se valida al confirmar.
-                </p>
-              </div>
-              <span>✓</span>
+            <div className="selected-method checkout-shipping-highlight">
+              <strong>¡ENVÍO GRATIS Y PAGO CONTRAENTREGA!</strong>
             </div>
-            <label className="checkbox">
-              <input type="checkbox" name="consent" required />{" "}
-              <span>
-                He leído y acepto las{" "}
-                <Link href="/politicas" target="_blank">
-                  condiciones de compra y tratamiento de datos
-                </Link>
-                . *
-              </span>
-            </label>
           </form>
         ) : (
           <div className="cart-items">
@@ -336,7 +313,7 @@ export function CartCheckout({
             {line && <fieldset className="checkout-offers"><legend>Elige tu promoción</legend>
               {line.offers.map((offer) => <label key={offer.quantity} className={`${item.quantity === offer.quantity ? "selected" : ""} ${offer.quantity === 2 ? "pair" : ""}`}>
                 <input type="radio" name={`checkout-offer-${item.productId}-${item.variantId || "base"}`} checked={item.quantity === offer.quantity} disabled={!offer.available || busy} onChange={() => setItems(items.map((current, n) => n === index ? { ...current, quantity: offer.quantity } : current))} />
-                <span><strong>{offer.quantity === 1 ? "Individual · 1 unidad" : offer.quantity === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small>ENVÍO GRATIS</small>{offer.quantity === 2 && line.pairBestSeller && <em>EL MÁS COMPRADO</em>}</span>
+                <span><strong>{offer.quantity === 1 ? "Individual · 1 unidad" : offer.quantity === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small>ENVÍO GRATIS · PAGO CONTRAENTREGA</small>{offer.quantity === 2 && line.pairBestSeller && <em>EL MÁS COMPRADO</em>}</span>
                 <b>{money(offer.total)}</b>
               </label>)}
             </fieldset>}
@@ -362,11 +339,11 @@ export function CartCheckout({
         <dl>
           <div>
             <dt>Subtotal</dt>
-            <dd>{quoting ? "Actualizando…" : quote ? money(quote.subtotal) : "Por validar"}</dd>
+            <dd>{quoting ? "Actualizando…" : quote ? money(quote.baseSubtotal) : "Por validar"}</dd>
           </div>
           <div>
             <dt>Descuento</dt>
-            <dd>{quoting ? "—" : quote ? money(quote.discount) : "—"}</dd>
+            <dd>{quoting ? "—" : quote ? money(quote.savings) : "—"}</dd>
           </div>
           <div>
             <dt>Envío</dt>
@@ -377,6 +354,10 @@ export function CartCheckout({
             <dd aria-live="polite">{quoting ? "Actualizando…" : quote ? money(quote.total) : "Por validar"}</dd>
           </div>
         </dl>
+        {checkout && <label className="checkbox checkout-consent">
+          <input type="checkbox" name="consent" form="checkout-form" required />
+          <span>He leído y acepto las <Link href="/politicas" target="_blank">condiciones de compra y tratamiento de datos</Link>. *</span>
+        </label>}
         {quoting && <p role="status">Validando precios e inventario…</p>}
         {error && (
           <p className="form-error" role="alert">
@@ -397,12 +378,7 @@ export function CartCheckout({
                   : "Compras aún no habilitadas"}{" "}
               <ArrowRight size={17} />
             </button>
-            <p className="small muted">
-              {enabled
-                ? "El pedido se valida en nuestro servidor antes de confirmarlo."
-                : "Estamos preparando la tienda. No se enviarán pedidos de prueba a Dropi."}
-            </p>
-          </>
+         </>
         ) : (
           <Link href="/checkout" className="button full">
             Continuar con mi compra <ArrowRight size={17} />

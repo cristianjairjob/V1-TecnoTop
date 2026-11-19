@@ -2,10 +2,10 @@ import { test, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import { Prisma } from "@prisma/client";
 import { checkoutSchema } from "../src/lib/validation";
-import { bogotaToday, buildDeliveryNotes, formatDeliveryDate, isoDateSchema } from "../src/lib/delivery";
+import { bogotaToday, minimumDeliveryDate, buildDeliveryNotes, formatDeliveryDate, isoDateSchema } from "../src/lib/delivery";
 import { createOrderDetails } from "../src/lib/order-details";
 import { buildDropiOrderPayload } from "../src/services/dropi/order-payload";
-import { checkout } from "../src/lib/checkout";
+import { checkout, quote } from "../src/lib/checkout";
 import { sendOrder } from "../src/services/dropi/orders";
 import { db } from "../src/lib/db";
 
@@ -13,8 +13,8 @@ const valid = () => ({
   firstName: "Ana María", lastName: "De la Cruz Pérez", phone: "3041234567",
   email: "ana@example.com", state: "BOGOTÁ, D.C.", city: "BOGOTÁ, D.C.",
   address: "Calle 10 número 20-30", complement: "Barrio Centro, apartamento 201",
-  establishment: "Conjunto Los Pinos", reference: "Frente al parque",
-  requestedDate: bogotaToday(), items: [{ productId: "product-test", quantity: 1 }],
+  additionalNotes: "Frente al parque",
+  requestedDate: minimumDeliveryDate(), items: [{ productId: "product-test", quantity: 1 }],
   idempotencyKey: "445cc966-89e8-4fc5-9664-d8abac4fdaaa", consent: true as const,
 });
 const originalEnv = { ...process.env };
@@ -38,9 +38,9 @@ afterEach(() => {
 for (const [field, value] of [
   ["firstName", " "], ["lastName", ""], ["phone", "12345"], ["address", "Calle"],
   ["complement", ""], ["email", "invalid"], ["state", ""], ["city", ""],
-  ["establishment", " "], ["reference", ""], ["requestedDate", ""],
+  ["additionalNotes", "x".repeat(1001)],
   ["requestedDate", "2000-01-01"], ["requestedDate", "2027-02-30"],
-  ["reference", "Parque\nLOCAL: otro"], ["consent", false], ["idempotencyKey", "123"],
+ ["consent", false], ["idempotencyKey", "123"],
 ] as const) {
   test(`checkout rechaza ${field} inválido: ${JSON.stringify(value)}`, () => {
     const result = checkoutSchema.safeParse({ ...valid(), [field]: value });
@@ -49,7 +49,7 @@ for (const [field, value] of [
   });
 }
 
-test("acepta hoy y conserva nombres compuestos por separado", () => {
+test("acepta el quinto día y conserva nombres compuestos por separado", () => {
   const input = checkoutSchema.parse(valid());
   const details = createOrderDetails(input, "TT-TEST");
   assert.equal(details.customer.firstName, "Ana María");
@@ -57,7 +57,7 @@ test("acepta hoy y conserva nombres compuestos por separado", () => {
   assert.deepEqual(details.address.buyer, {
     firstName: input.firstName, lastName: input.lastName, email: input.email, phone: input.phone,
   });
-  assert.equal(details.address.delivery.requestedDate, bogotaToday());
+  assert.equal(details.address.delivery.requestedDate, minimumDeliveryDate());
 });
 
 test("el cambio de día usa America/Bogota y las fechas no se convierten a UTC", () => {
@@ -172,7 +172,7 @@ for (const fails of [false, true]) {
     const result = await checkout(input);
     assert.ok(stored && sent);
     assert.equal(sent.notes, stored.deliveryNotes);
-    assert.equal(sent.notes, buildDeliveryNotes({ establishment: input.establishment, reference: input.reference, requestedDate: input.requestedDate }, result.number));
+    assert.equal(sent.notes, buildDeliveryNotes({ version: 2, additionalNotes: input.additionalNotes, requestedDate: input.requestedDate }, result.number));
     assert.equal(sent.name, input.firstName);
     assert.equal(sent.surname, input.lastName);
     assert.equal(result.shipping, 0);
@@ -185,7 +185,7 @@ for (const fails of [false, true]) {
     await checkout(input);
     assert.equal(creates, 1, "El reintento idempotente no crea otro pedido");
     assert.equal(requests, 1, "No vuelve a enviarlo a Dropi");
-    await assert.rejects(checkout({ ...input, reference: "Otra referencia" }), /ya fue utilizada/);
+    await assert.rejects(checkout({ ...input, additionalNotes: "Otra referencia" }), /ya fue utilizada/);
   });
 }
 
@@ -198,4 +198,37 @@ test("demo product allows cart quotes but cannot create orders or contact Dropi"
   stub(db, "$transaction", async () => assert.fail("No debe crear una orden"));
   mock.method(globalThis, "fetch", async () => assert.fail("No debe contactar a Dropi"));
   await assert.rejects(checkout(checkoutSchema.parse(valid())), /producto de demostración/);
+});
+
+test("fecha opcional y límite de cinco días en Colombia", () => {
+  for (const requestedDate of ["", undefined]) assert.equal(checkoutSchema.safeParse({ ...valid(), requestedDate, additionalNotes: undefined }).success, true);
+  const min = minimumDeliveryDate();
+  const before = new Date(min + "T12:00:00Z"); before.setUTCDate(before.getUTCDate() - 1);
+  assert.equal(checkoutSchema.safeParse({ ...valid(), requestedDate: before.toISOString().slice(0, 10) }).success, false);
+  assert.equal(checkoutSchema.safeParse({ ...valid(), requestedDate: min }).success, true);
+  assert.equal(minimumDeliveryDate(new Date("2026-12-31T04:59:59Z")), "2027-01-04");
+  assert.equal(minimumDeliveryDate(new Date("2026-12-31T05:00:00Z")), "2027-01-05");
+});
+test("notas opcionales se almacenan y envían sin inventar una fecha", () => {
+  const order = fixture();
+  Object.assign(order, createOrderDetails(checkoutSchema.parse({ ...valid(), additionalNotes: "", requestedDate: "" }), order.number));
+  assert.equal(buildDropiOrderPayload(order).notes, "NOTAS ADICIONALES: Sin indicaciones adicionales.\n\nFECHA SOLICITADA DE ENTREGA: Sin fecha solicitada.\n\nPEDIDO TECNOTOP: TT-TEST.");
+});
+test("pedidos históricos conservan su texto original", () => {
+  const order = fixture();
+  const delivery = { establishment: "Casa particular", reference: "Frente al parque", requestedDate: "2020-01-01" };
+  order.address = { ...(order.address as object), delivery };
+  order.deliveryNotes = buildDeliveryNotes(delivery, order.number);
+  assert.equal(buildDropiOrderPayload(order).notes, order.deliveryNotes);
+});
+test("ahorro suma precio anterior, combo y cupón sin duplicar descuentos", async () => {
+  stub(db.product, "findMany", async () => [{ id: "p", name: "Producto", salePrice: 100000, previousPrice: 130000, combo2Price: 180000, stock: 20, variants: [] }]);
+  stub(db.promotion, "findUnique", async () => ({ active: true, startsAt: new Date("2020-01-01"), endsAt: new Date("2099-01-01"), minimum: 0, percent: 10 }));
+  const result = await quote([{ productId: "p", quantity: 2 }], "TEST");
+  assert.equal(result.baseSubtotal, 260000);
+  assert.equal(result.subtotal, 180000);
+  assert.equal(result.discount, 18000);
+  assert.equal(result.savings, 98000);
+  assert.equal(result.total, 162000);
+  assert.equal(result.baseSubtotal - result.savings, result.total);
 });

@@ -11,7 +11,7 @@ import { productStock } from "@/services/dropi/inventory";
 import { safePayload } from "@/services/dropi/types";
 import { sendOrder } from "@/services/dropi/orders";
 import { createOrderDetails } from "./order-details";
-import { offerTotal, allocateUnitPrices } from "./product-offers";
+import { offerTotal, allocateUnitPrices, referenceLineTotal } from "./product-offers";
 export async function quote(items: z.infer<typeof cartSchema>, code = "") {
   const products = await db.product.findMany({
     where: {
@@ -64,8 +64,12 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
       0,
     ) / 100;
   const discount = Math.round((subtotal - total) * 100) / 100;
+  const baseSubtotal = Math.round(lines.reduce((sum, line) => sum + referenceLineTotal(line.unitPrice, line.product.previousPrice, line.quantity, line.lineTotal), 0) * 100) / 100;
+  const savings = Math.round((baseSubtotal - total) * 100) / 100;
   return {
     lines: discountedLines,
+    baseSubtotal,
+    savings,
     subtotal,
     discount,
     shipping: 0,

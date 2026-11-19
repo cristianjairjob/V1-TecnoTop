@@ -9,7 +9,7 @@ export function createOrderDetails(input: z.infer<typeof checkoutSchema>, number
     email: input.email, phone: input.phone,
   };
   const delivery = {
-    establishment: input.establishment, reference: input.reference,
+    version: 2 as const, additionalNotes: input.additionalNotes,
     requestedDate: input.requestedDate,
   };
   return {
