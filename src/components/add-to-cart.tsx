@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ShoppingBag, Check, Banknote, Truck, Flame } from "lucide-react";
 import { offerTotal } from "@/lib/product-offers";
-import { useCart } from "./cart-provider";
+import { directCheckoutUrl } from "@/lib/direct-checkout";
 import { money } from "@/lib/catalog-format";
 import { useRouter } from "next/navigation";
 export function AddToCart({
@@ -22,7 +22,6 @@ export function AddToCart({
     variants: { id: string; name: string; price: number; stock: number }[];
   };
 }) {
-  const { items, setItems } = useCart();
   const router = useRouter();
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -34,38 +33,11 @@ export function AddToCart({
   const selectedTotal = offerTotal(price, quantity, product);
   function add() {
     if (!Number.isInteger(quantity) || quantity < 1 || price <= 0 || stock < quantity || (product.variants.length && !v)) return;
-    const existing = items.find(
-      (i) =>
-        i.productId === product.id && i.variantId === (variantId || undefined),
-    );
-    if ((existing?.quantity ?? 0) + quantity > Math.min(stock, 20)) {
-      setMessage("Ya alcanzaste la cantidad disponible.");
-      return;
-    }
-    setItems(
-      existing
-        ? items.map((i) =>
-            i === existing ? { ...i, price, stock, quantity: i.quantity + quantity } : i,
-          )
-        : [
-            ...items,
-            {
-              productId: product.id,
-              variantId: variantId || undefined,
-              name: product.name + (v ? " · " + v.name : ""),
-              image: product.image,
-              price,
-              quantity,
-              stock,
-            },
-          ],
-    );
-    setMessage("Producto agregado al carrito.");
-    router.push("/carrito");
+    router.push(directCheckoutUrl(product.id, quantity, variantId));
   }
   return (
     <div className="buy-panel purchase-card">
-      {product.demo && <p className="demo-purchase-notice">Modo demostración · Puedes probar el carrito. Este producto no permite confirmar pedidos.</p>}
+      {product.demo && <p className="demo-purchase-notice">Modo demostración · Puedes probar el formulario. Este producto no permite confirmar pedidos.</p>}
       <div className="product-unit-price" aria-live="polite"><strong>{money(selectedTotal)}</strong><span><Banknote size={17} /> Paga al recibir</span></div>
       <p className="purchase-selection">{quantity} {quantity === 1 ? "unidad" : "unidades"} · {money(selectedTotal / quantity)} c/u{v ? ` · ${v.name}` : ""}</p>
       <fieldset className="product-offers"><legend>ELIGE TU OPCIÓN</legend>
@@ -95,7 +67,7 @@ export function AddToCart({
           disabled={price <= 0 || stock < quantity || Boolean(product.variants.length && !v)}
         >
           <ShoppingBag size={18} />{" "}
-          <span>{stock < 1 ? "Agotado" : "COMPRAR AHORA"}<small>{product.demo ? "Prueba el carrito" : "Pago contraentrega · Envío gratis"}</small></span>
+          <span>{stock < 1 ? "Agotado" : "COMPRAR AHORA"}<small>{product.demo ? "Prueba el formulario" : "Pago contraentrega · Envío gratis"}</small></span>
         </button>
       </div>
       <p className="shipping-note">

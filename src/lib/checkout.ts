@@ -222,7 +222,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     throw e;
   }
   await db.notification.createMany({
-    data: ["EMAIL", "ADMIN", "WHATSAPP"].map((channel) => ({
+    data: [...(input.email ? ["EMAIL"] : []), "ADMIN", "WHATSAPP"].map((channel) => ({
       orderId: order.id,
       channel,
       event: "ORDER_RECEIVED",

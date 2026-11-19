@@ -2,11 +2,18 @@
 
 Rama: `feature/checkout-delivery-notes-v1`.
 
-El checkout exige nombres y apellidos separados, teléfono colombiano, correo,
+El checkout exige nombres y apellidos separados, teléfono colombiano,
 departamento, ciudad, dirección, complemento, establecimiento, referencia y fecha
-solicitada. La fecha se guarda como `YYYY-MM-DD`, se presenta como `DD/MM/YYYY` y
+solicitada. El correo es opcional; cuando falta se conserva vacío, sin inventar direcciones.
+La fecha se guarda como `YYYY-MM-DD`, se presenta como `DD/MM/YYYY` y
 se valida contra el día actual de `America/Bogota`. La interfaz aclara que no es
 una promesa de entrega.
+
+Comprar ahora abre `/checkout?product=…&quantity=…&variant=…` sin modificar el carrito.
+El resumen permite sustituir la cantidad por 1, 2 o 3 y vuelve a cotizar desde MySQL.
+Los departamentos y municipios proceden del listado DIVIPOLA del DANE publicado en
+https://www.datos.gov.co/Mapas-Nacionales/DIVIPOLA-C-digos-municipios/gdxc-w37w,
+incluido en `src/data/colombia-locations.json`. El servidor valida que ciudad y departamento coincidan.
 
 ## Archivos
 

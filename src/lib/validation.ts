@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { deliverySchema, requestedDeliveryDateSchema } from "./delivery";
+import { isColombiaLocation } from "./colombia-locations";
+export const optionalEmailSchema = z.string().trim().pipe(z.union([z.email().max(180), z.literal("")])).default("");
 export const phoneSchema = z
   .string()
   .transform((v) => v.replace(/[\s()+-]/g, "").replace(/^57(?=3\d{9}$)/, ""))
@@ -27,7 +29,7 @@ export const checkoutSchema = z.object({
   firstName: z.string().trim().min(1, "Los nombres son obligatorios.").max(80),
   lastName: z.string().trim().min(1, "Los apellidos son obligatorios.").max(80),
   phone: phoneSchema,
-  email: z.email().max(180),
+  email: optionalEmailSchema,
   state: z.string().trim().min(2).max(80),
   city: z.string().trim().min(2).max(80),
   address: z.string().trim().min(8).max(200),
@@ -39,6 +41,8 @@ export const checkoutSchema = z.object({
   promotionCode: z.string().max(50).default(""),
   idempotencyKey: z.uuid(),
   consent: z.literal(true),
+}).refine((input) => isColombiaLocation(input.state, input.city), {
+  path: ["city"], message: "Selecciona una ciudad o municipio del departamento indicado.",
 });
 export function discountAmount(subtotal: number, percent: number) {
   return Math.round(subtotal * Math.min(100, Math.max(0, percent))) / 100;

@@ -9,12 +9,14 @@ import {
   LockKeyhole,
   ShoppingBag,
 } from "lucide-react";
-import { useCart } from "./cart-provider";
+import { useCart, type CartLine } from "./cart-provider";
 import { money } from "@/lib/catalog-format";
 import { bogotaToday, formatDeliveryDate } from "@/lib/delivery";
 import { checkoutSchema } from "@/lib/validation";
+import { departments, citiesForDepartment } from "@/lib/colombia-locations";
+import { directCheckoutUrl } from "@/lib/direct-checkout";
 type Quote = {
-  lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number }[];
+  lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number; pairBestSeller: boolean; offers: { quantity: number; total: number; available: boolean }[] }[];
   subtotal: number;
   discount: number;
   shipping: number;
@@ -23,11 +25,15 @@ type Quote = {
 export function CartCheckout({
   checkout = false,
   enabled = false,
+  directItems,
 }: {
   checkout?: boolean;
   enabled?: boolean;
+  directItems?: CartLine[];
 }) {
-  const { items, setItems } = useCart();
+  const cart = useCart();
+  const [purchaseItems, setPurchaseItems] = useState(directItems ?? []);
+  const items = directItems ? purchaseItems : cart.items;
   const router = useRouter();
   const [coupon, setCoupon] = useState("");
   const [applied, setApplied] = useState("");
@@ -36,6 +42,17 @@ export function CartCheckout({
   const [busy, setBusy] = useState(false);
   const [quoting, setQuoting] = useState(true);
   const [requestedDate, setRequestedDate] = useState("");
+  const [department, setDepartment] = useState("");
+  const [city, setCity] = useState("");
+  const cities = citiesForDepartment(department);
+  function setItems(nextItems: CartLine[]) {
+    if (JSON.stringify(nextItems) !== JSON.stringify(items)) setQuoting(true);
+    if (directItems) {
+      setPurchaseItems(nextItems);
+      const selected = nextItems[0];
+      if (selected) window.history.replaceState(null, "", directCheckoutUrl(selected.productId, selected.quantity, selected.variantId));
+    } else cart.setItems(nextItems);
+  }
   const serialized = JSON.stringify(
     items.map(({ productId, variantId, quantity }) => ({
       productId,
@@ -47,7 +64,6 @@ export function CartCheckout({
     const controller = new AbortController();
     Promise.resolve().then(() => {
       setQuoting(true);
-      setQuote(null);
     });
     if (serialized === "[]") {
       Promise.resolve().then(() => setQuoting(false));
@@ -69,7 +85,7 @@ export function CartCheckout({
         setError("");
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
+        if (e.name !== "AbortError") { setError(e.message); setQuote(null); }
       })
       .finally(() => {
         if (!controller.signal.aborted) setQuoting(false);
@@ -138,7 +154,7 @@ export function CartCheckout({
             <p>Completa tus datos. Solo pagarás cuando recibas la compra.</p>
             <div className="form-grid">
               <label>
-                Nombres
+                Nombres *
                 <input
                   name="firstName"
                   autoComplete="given-name"
@@ -147,11 +163,11 @@ export function CartCheckout({
                 />
               </label>
               <label>
-                Apellidos
+                Apellidos *
                 <input name="lastName" autoComplete="family-name" required maxLength={80} />
               </label>
               <label>
-                Celular
+                Celular *
                 <input
                   name="phone"
                   type="tel"
@@ -162,39 +178,39 @@ export function CartCheckout({
                 />
               </label>
               <label>
-                Correo electrónico
+                Correo electrónico (opcional)
                 <input
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   maxLength={180}
                 />
               </label>
               <label>
-                Departamento
-                <input
-                  name="state"
-                  autoComplete="address-level1"
-                  required
-                  minLength={2}
-                  maxLength={80}
-                />
+                Departamento *
+                <select name="state" autoComplete="address-level1" required value={department} onChange={(event) => { setDepartment(event.target.value); setCity(""); }}>
+                  <option value="">Selecciona tu departamento</option>
+                  {departments.map((item) => <option key={item.code} value={item.name}>{item.name}</option>)}
+                </select>
               </label>
               <label>
-                Ciudad
-                <input
-                  name="city"
-                  autoComplete="address-level2"
-                  required
-                  minLength={2}
-                  maxLength={80}
-                />
+                Ciudad / municipio *
+                <select name="city" autoComplete="address-level2" required disabled={!department} value={city} onChange={(event) => setCity(event.target.value)}>
+                  <option value="">{department ? "Selecciona tu ciudad o municipio" : "Primero selecciona un departamento"}</option>
+                  {cities.map((item) => <option key={item.code} value={item.name}>{item.name}</option>)}
+                </select>
               </label>
+              <figure className="span-two checkout-address-guide">
+                <a href="/checkout/address-guide.png" target="_blank" rel="noopener noreferrer" aria-label="Ampliar guía para escribir la dirección">
+                  <img src="/checkout/address-guide.png" alt="Cómo enviar la dirección correctamente. Ejemplo: Carrera 3 # 45 - 07. Indica la vía, el cruce y el número de tu casa." width={1672} height={941} />
+                </a>
+                <figcaption>Ejemplo: <strong>Carrera 3 # 45 - 07</strong>. <a href="/checkout/address-guide.png" target="_blank" rel="noopener noreferrer">Ver guía ampliada ↗</a></figcaption>
+              </figure>
               <label className="span-two">
-                Dirección
+                Dirección exacta (con nomenclatura) *
                 <input
                   name="address"
+                  placeholder="Ej: Calle 12 # 15 - 30 o Reclamo en oficina."
                   autoComplete="street-address"
                   required
                   minLength={8}
@@ -202,16 +218,17 @@ export function CartCheckout({
                 />
               </label>
               <label className="span-two">
-                Barrio y complemento
+                Información adicional para la transportadora *
                 <input
                   name="complement"
-                  placeholder="Barrio, edificio, apartamento o No aplica"
+                  placeholder="Ej: Barrio/casa/apartamento/Edificio/local"
                   required
                   maxLength={200}
                 />
               </label>
             </div>
             <h3>INFORMACIÓN ADICIONAL DE ENTREGA</h3>
+            <p className="small">Completa estos datos para que el proveedor pueda preparar la entrega.</p>
             <div className="form-grid">
               <label className="span-two">
                 Nombre del local o establecimiento
@@ -253,7 +270,7 @@ export function CartCheckout({
                 <Link href="/politicas" target="_blank">
                   condiciones de compra y tratamiento de datos
                 </Link>
-                .
+                . *
               </span>
             </label>
           </form>
@@ -311,18 +328,20 @@ export function CartCheckout({
       <aside className="order-summary">
         <span className="eyebrow">TU PRÓXIMA CONEXIÓN</span>
         <h2>Resumen del pedido</h2>
-        {checkout &&
-          items.map((i) => (
-            <p
-              key={`${i.productId}:${i.variantId}`}
-              className="summary-product"
-            >
-              <span>
-                {i.quantity} × {i.name}
-              </span>
-              <span>{money(i.price * i.quantity)}</span>
-            </p>
-          ))}
+        {checkout && items.map((item, index) => {
+          const line = quote?.lines.find((l) => l.productId === item.productId && (l.variantId || undefined) === item.variantId);
+          return <div className="checkout-product-choice" key={`${item.productId}:${item.variantId}`}>
+            <div className="checkout-product-heading"><img src={item.image || "/brand/tecnotop-original.png"} alt="" /><strong>{item.name}</strong></div>
+            <p className="summary-product"><span>{item.quantity} {item.quantity === 1 ? "unidad" : "unidades"}</span><span>{quoting ? "Actualizando…" : line ? money(line.effectiveTotal) : "Por validar"}</span></p>
+            {line && <fieldset className="checkout-offers"><legend>Elige tu promoción</legend>
+              {line.offers.map((offer) => <label key={offer.quantity} className={`${item.quantity === offer.quantity ? "selected" : ""} ${offer.quantity === 2 ? "pair" : ""}`}>
+                <input type="radio" name={`checkout-offer-${item.productId}-${item.variantId || "base"}`} checked={item.quantity === offer.quantity} disabled={!offer.available || busy} onChange={() => setItems(items.map((current, n) => n === index ? { ...current, quantity: offer.quantity } : current))} />
+                <span><strong>{offer.quantity === 1 ? "Individual · 1 unidad" : offer.quantity === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small>ENVÍO GRATIS</small>{offer.quantity === 2 && line.pairBestSeller && <em>EL MÁS COMPRADO</em>}</span>
+                <b>{money(offer.total)}</b>
+              </label>)}
+            </fieldset>}
+          </div>;
+        })}
         <label>
           Código de descuento
           <div className="coupon">
@@ -343,11 +362,11 @@ export function CartCheckout({
         <dl>
           <div>
             <dt>Subtotal</dt>
-            <dd>{quote ? money(quote.subtotal) : "Por validar"}</dd>
+            <dd>{quoting ? "Actualizando…" : quote ? money(quote.subtotal) : "Por validar"}</dd>
           </div>
           <div>
             <dt>Descuento</dt>
-            <dd>{quote ? money(quote.discount) : "—"}</dd>
+            <dd>{quoting ? "—" : quote ? money(quote.discount) : "—"}</dd>
           </div>
           <div>
             <dt>Envío</dt>
@@ -355,7 +374,7 @@ export function CartCheckout({
           </div>
           <div className="summary-total">
             <dt>Total</dt>
-            <dd>{quote ? money(quote.total) : "Por validar"}</dd>
+            <dd aria-live="polite">{quoting ? "Actualizando…" : quote ? money(quote.total) : "Por validar"}</dd>
           </div>
         </dl>
         {quoting && <p role="status">Validando precios e inventario…</p>}

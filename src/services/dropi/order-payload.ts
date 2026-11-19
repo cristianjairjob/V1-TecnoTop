@@ -2,14 +2,14 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { AppError } from "@/lib/http";
 import { buildDeliveryNotes, deliverySchema } from "@/lib/delivery";
-import { phoneSchema } from "@/lib/validation";
+import { phoneSchema, optionalEmailSchema } from "@/lib/validation";
 
 const addressSchema = z.object({
   state: z.string().trim().min(2), city: z.string().trim().min(2),
   address: z.string().trim().min(8), complement: z.string().trim().min(1),
   buyer: z.object({
     firstName: z.string().trim().min(1), lastName: z.string().trim().min(1),
-    phone: phoneSchema, email: z.email(),
+    phone: phoneSchema, email: optionalEmailSchema,
   }),
   delivery: deliverySchema,
 });

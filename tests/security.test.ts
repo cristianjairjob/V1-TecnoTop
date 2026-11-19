@@ -59,15 +59,15 @@ test("impide publicación sin clasificación, imágenes o precio de variante", (
   assert.equal(publishable({ ...p, images: [] }), false);
   assert.equal(publishable(p, [{ active: true, salePrice: null }]), false);
 });
-test("checkout exige consentimiento, email e idempotency UUID", () => {
+test("checkout exige consentimiento e idempotency UUID", () => {
   assert.equal(
     checkoutSchema.safeParse({
       firstName: "Ana",
       lastName: "Pérez",
       phone: "3045939644",
       email: "a@example.com",
-      state: "Cundinamarca",
-      city: "Bogotá",
+      state: "BOGOTÁ, D.C.",
+      city: "BOGOTÁ, D.C.",
       address: "Calle 10 número 20",
       complement: "Centro",
       establishment: "Casa particular",

@@ -4,6 +4,7 @@ import { quote } from "@/lib/checkout";
 import { cartSchema } from "@/lib/validation";
 import { failure, readBody, sameOrigin } from "@/lib/http";
 import { rateLimit } from "@/lib/auth";
+import { offerTotal } from "@/lib/product-offers";
 export async function POST(req: Request) {
   try {
     sameOrigin(req);
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
         quantity: l.quantity,
         lineTotal: l.lineTotal,
         effectiveTotal: l.effectiveTotal,
+        pairBestSeller: l.product.pairBestSeller,
+        offers: [1, 2, 3].map((quantity) => ({ quantity, total: offerTotal(l.unitPrice, quantity, l.product), available: (l.variant?.stock ?? l.product.stock) >= quantity })),
       })),
     });
   } catch (e) {

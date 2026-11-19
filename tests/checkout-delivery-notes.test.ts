@@ -11,7 +11,7 @@ import { db } from "../src/lib/db";
 
 const valid = () => ({
   firstName: "Ana María", lastName: "De la Cruz Pérez", phone: "3041234567",
-  email: "ana@example.com", state: "Cundinamarca", city: "Bogotá",
+  email: "ana@example.com", state: "BOGOTÁ, D.C.", city: "BOGOTÁ, D.C.",
   address: "Calle 10 número 20-30", complement: "Barrio Centro, apartamento 201",
   establishment: "Conjunto Los Pinos", reference: "Frente al parque",
   requestedDate: bogotaToday(), items: [{ productId: "product-test", quantity: 1 }],
@@ -107,6 +107,22 @@ test("el payload de un pedido guardado conserva su fecha aunque ya haya pasado",
   assert.equal(payload.shop_order_id, order.number);
   assert.equal("notes_enabled" in payload, false);
   assert.equal("add_notes" in payload, false);
+});
+
+test("el correo es opcional, no se inventa y se conserva vacío en el payload", () => {
+  for (const email of ["", "   ", undefined]) {
+    const input = checkoutSchema.parse({ ...valid(), email });
+    assert.equal(input.email, "");
+    const order = fixture();
+    Object.assign(order, createOrderDetails(input, order.number));
+    assert.equal(buildDropiOrderPayload(order).client_email, "");
+  }
+});
+
+test("el servidor rechaza una ciudad que no pertenece al departamento", () => {
+  assert.equal(checkoutSchema.safeParse({ ...valid(), state: "ANTIOQUIA", city: "CALI" }).success, false);
+  assert.equal(checkoutSchema.safeParse({ ...valid(), state: "ANTIOQUIA", city: "MEDELLÍN" }).success, true);
+  assert.equal(checkoutSchema.safeParse({ ...valid(), address: "Reclamo en oficina" }).success, true);
 });
 
 for (const fails of [false, true]) {
