@@ -2141,3 +2141,5 @@ button:focus-visible {
 
 .checkout-floating-clock { position: fixed; right: max(16px,env(safe-area-inset-right)); bottom: max(18px,env(safe-area-inset-bottom)); z-index: 80; display: flex; gap: 8px; align-items: center; padding: 11px 14px; border: 1px solid #61dfff; border-radius: 999px; background: #062d50; color: #8deaff; box-shadow: 0 6px 24px #001b4560; pointer-events: none; }
 .floating-clock-value { font: 800 18px/1.2 ui-monospace,monospace; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+
+.order-summary .summary-discount { color: #c52236; font-weight: 800; }

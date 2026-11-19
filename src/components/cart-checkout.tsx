@@ -345,7 +345,7 @@ export function CartCheckout({
           </div>
           <div>
             <dt>Descuento</dt>
-            <dd>{quoting ? "—" : quote ? money(quote.savings) : "—"}</dd>
+            <dd className="summary-discount">{quoting ? "—" : quote ? money(quote.savings) : "—"}</dd>
           </div>
           <div>
             <dt>Envío</dt>
