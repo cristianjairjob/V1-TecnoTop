@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { CheckoutTimer } from "./checkout-timer";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -151,6 +152,7 @@ export function CartCheckout({
       <div>
         {checkout ? (
           <form id="checkout-form" className="checkout-form" onSubmit={submit}>
+            <CheckoutTimer />
             <h2>¿Dónde recibes tu pedido?</h2>
             <p>Completa tus datos. Solo pagarás cuando recibas la compra.</p>
             <div className="form-grid">

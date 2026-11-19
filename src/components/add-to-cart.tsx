@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { ShoppingBag, Check, Banknote, Truck, Flame } from "lucide-react";
+import Link from "next/link";
+import { ShoppingBag, Check, Banknote, Truck, Flame, ShieldCheck, Video } from "lucide-react";
 import { offerTotal } from "@/lib/product-offers";
 import { directCheckoutUrl } from "@/lib/direct-checkout";
 import { money } from "@/lib/catalog-format";
@@ -70,6 +71,14 @@ export function AddToCart({
           <span>{stock < 1 ? "Agotado" : "COMPRAR AHORA"}<small>{product.demo ? "Prueba el formulario" : "Pago contraentrega · Envío gratis"}</small></span>
         </button>
       </div>
+      <section className="product-warranty" aria-label="Garantía TecnoTop">
+        <div className="warranty-seal"><ShieldCheck size={30} /><span>GARANTÍA</span></div>
+        <div><strong>Tu compra cuenta con garantía</strong>
+          <p>Cubre fallas de fábrica, ensamblaje y productos dañados o incorrectos. Te ayudamos con la reparación o el cambio.</p>
+          <p className="warranty-video"><Video size={18} aria-hidden="true" /><span>Al recibir tu pedido, te recomendamos grabar un video abriéndolo y probándolo para facilitar la revisión.</span></p>
+          <Link href="/politicas">Consulta las condiciones de garantía →</Link>
+        </div>
+      </section>
       <p className="shipping-note">
         <Check size={15} /> Revisa tu selección en el siguiente paso
       </p>

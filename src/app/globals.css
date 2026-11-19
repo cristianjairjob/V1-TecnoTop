@@ -2111,3 +2111,28 @@ button:focus-visible {
 .checkout-consent { margin: 18px 0; align-items: flex-start; }
 .checkout-offers small { line-height: 1.5; }
 .offer-free-shipping { flex-wrap: wrap; white-space: normal; }
+
+.checkout-header .brand { margin-right: auto; }
+
+.checkout-countdown { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 12px 20px; padding: 20px; margin-bottom: 28px; border: 1px solid #4acfff; border-radius: 18px; background: linear-gradient(120deg,#072c55,#07588e); color: #fff; box-shadow: 0 5px 22px #008fd526; }
+.checkout-countdown-message { display: flex; align-items: center; gap: 12px; }
+.checkout-countdown-message svg { flex-shrink: 0; color: #71e4ff; }
+.checkout-countdown-message strong { font-size: 20px; line-height: 1.25; }
+.checkout-clock { padding: 10px 16px; border: 1px solid #6bdcff; border-radius: 999px; background: #041e3b; color: #86eaff; font: 800 24px/1.2 ui-monospace,monospace; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.checkout-countdown small { grid-column: 1 / -1; color: #c5e5f7; font-size: 11px; line-height: 1.5; }
+.product-warranty { display: flex; align-items: flex-start; gap: 14px; padding: 18px 14px; margin-top: 16px; border: 1px dashed #4bcaff; border-radius: 18px; background: linear-gradient(120deg,#123552,#0a253e); color: #e7f6ff; }
+.warranty-seal { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 72px; height: 72px; flex-shrink: 0; border: 3px solid #082e50; outline: 1px solid #5ddfff; border-radius: 50%; background: linear-gradient(135deg,#bcefff,#34c7ff); color: #06345c; }
+.warranty-seal span { font-size: 8px; font-weight: 900; letter-spacing: .5px; margin-top: 3px; }
+.product-warranty strong { font-size: 16px; color: #fff; }
+.product-warranty p { margin: 6px 0; font-size: 12px; line-height: 1.6; color: #c6dfef; }
+.product-warranty a { color: #7fe4ff; font-size: 12px; text-decoration: underline; }
+.warranty-video { display: flex; gap: 7px; align-items: flex-start; }
+.warranty-video svg { flex-shrink: 0; margin-top: 3px; color: #7fe4ff; }
+@media (max-width: 600px) {
+  .checkout-countdown { grid-template-columns: 1fr; padding: 18px 16px; text-align: center; }
+  .checkout-countdown-message { justify-content: center; }
+  .checkout-countdown-message strong { font-size: 19px; }
+  .checkout-clock { justify-self: center; font-size: 28px; }
+  .product-warranty { gap: 12px; padding: 16px 12px; }
+  .warranty-seal { width: 58px; height: 58px; }
+}

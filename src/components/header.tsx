@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Search,
   ShoppingBag,
@@ -15,6 +16,7 @@ export function Header({
   categories: { slug: string; name: string }[];
 }) {
   const { items } = useCart();
+  const isCheckout = usePathname() === "/checkout";
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -31,7 +33,7 @@ export function Header({
         </div>
       </div>
       <header className="site-header">
-        <div className="header-main wrap">
+        <div className={`header-main wrap ${isCheckout ? "checkout-header" : ""}`}>
           <Link href="/" className="brand" aria-label="TecnoTop, inicio">
             <img
               src="/brand/tecnotop-original.png"
@@ -44,7 +46,7 @@ export function Header({
               <small>TECNOLOGÍA PARA TU DÍA</small>
             </span>
           </Link>
-          <form action="/catalogo" className="search">
+          {!isCheckout && <form action="/catalogo" className="search">
             <Search size={18} />
             <input
               aria-label="Buscar productos"
@@ -52,7 +54,7 @@ export function Header({
               placeholder="¿Qué estás buscando hoy?"
             />
             <button type="submit">Buscar</button>
-          </form>
+          </form>}
           <Link className="header-track" href="/seguimiento">
             <Truck size={22} />
             <span>
