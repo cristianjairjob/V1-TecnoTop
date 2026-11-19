@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
 import { CHECKOUT_CYCLE_MS, cycleSeconds, formatCountdown } from "@/lib/checkout-timer";
 export function CheckoutTimer() {
+  const timerRef = useRef<HTMLElement>(null);
+  const [floating, setFloating] = useState(false);
   const [seconds, setSeconds] = useState(CHECKOUT_CYCLE_MS / 1000);
   useEffect(() => {
     const now = Date.now();
@@ -17,8 +19,29 @@ export function CheckoutTimer() {
     const interval = window.setInterval(update, 1000);
     return () => { window.clearTimeout(initial); window.clearInterval(interval); };
   }, []);
-  return <section className="checkout-countdown" aria-label="Temporizador del formulario">
+  useEffect(() => {
+    const element = timerRef.current;
+    if (!element) return;
+    let observer: IntersectionObserver;
+    const observe = () => {
+      observer?.disconnect();
+      const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height ?? 0;
+      observer = new IntersectionObserver(([entry]) => {
+        setFloating(!entry.isIntersecting && entry.boundingClientRect.bottom <= headerHeight);
+      }, { rootMargin: "-" + headerHeight + "px 0px 0px 0px", threshold: 0 });
+      observer.observe(element);
+    };
+    observe();
+    window.addEventListener("resize", observe);
+    return () => { observer.disconnect(); window.removeEventListener("resize", observe); };
+  }, []);
+  return <><section ref={timerRef} className="checkout-countdown" aria-label="Temporizador del formulario">
     <div className="checkout-countdown-message"><Timer size={28} aria-hidden="true" /><strong>¡Aprovecha la oferta y haz tu pedido!</strong></div>
     <div className="checkout-clock" role="timer" aria-live="off" aria-label="Temporizador">{formatCountdown(seconds)}</div>
-  </section>;
+  </section>
+    {floating && <aside className="checkout-floating-clock" aria-label="Temporizador flotante">
+      <Timer size={17} aria-hidden="true" />
+      <span className="floating-clock-value" role="timer" aria-live="off">{formatCountdown(seconds)}</span>
+    </aside>}
+  </>;
 }
