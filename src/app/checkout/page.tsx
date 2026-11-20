@@ -1,6 +1,6 @@
 import { productColors } from "@/lib/product-colors";
 import { CartCheckout } from "@/components/cart-checkout";
-import { storeSettings } from "@/lib/catalog";
+import { checkoutReadiness } from "@/lib/checkout-readiness";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { directCheckoutSchema } from "@/lib/direct-checkout";
@@ -10,7 +10,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 export default async function Checkout({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const store = await storeSettings();
+  const readiness = await checkoutReadiness();
   const query = await searchParams;
   let directItems: CartLine[] | undefined;
   if (query.product !== undefined) {
@@ -34,7 +34,7 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
         directItems={directItems}
         checkout
         enabled={
-          process.env.CHECKOUT_ENABLED === "true" && store.policiesApproved
+          readiness.enabled
         }
       />
     </div>

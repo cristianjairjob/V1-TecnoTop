@@ -6,7 +6,6 @@ import { bogotaToday, minimumDeliveryDate, buildDeliveryNotes, formatDeliveryDat
 import { createOrderDetails } from "../src/lib/order-details";
 import { buildDropiOrderPayload } from "../src/services/dropi/order-payload";
 import { checkout, quote } from "../src/lib/checkout";
-import { sendOrder } from "../src/services/dropi/orders";
 import { db } from "../src/lib/db";
 
 const valid = () => ({
@@ -29,7 +28,7 @@ function stub(target: object, key: string, implementation: unknown) {
 afterEach(() => {
   restoreStubs.splice(0).reverse().forEach((restore) => restore());
   mock.restoreAll();
-  for (const key of ["CHECKOUT_ENABLED", "DROPI_ORDERS_ENABLED", "DROPI_API_TOKEN", "DROPI_API_URL", "DATABASE_URL"]) {
+  for (const key of ["CHECKOUT_ENABLED", "DROPI_ORDERS_ENABLED", "DROPI_API_TOKEN", "DROPI_API_URL", "DATABASE_URL", "TELEGRAM_NOTIFICATIONS_ENABLED"]) {
     if (originalEnv[key] === undefined) delete process.env[key];
     else process.env[key] = originalEnv[key];
   }
@@ -89,11 +88,11 @@ test("notas incompletas o discordantes bloquean antes de reclamar el pedido", as
   stub(db.order, "updateMany", async () => assert.fail("No debe reclamar"));
   mock.method(globalThis, "fetch", async () => assert.fail("No debe enviar"));
   order.deliveryNotes = null;
-  await assert.rejects(sendOrder(order.id), /todos los datos/);
+  assert.throws(() => buildDropiOrderPayload(order), /todos los datos/);
   order.deliveryNotes = "TecnoTop TT-TEST";
-  await assert.rejects(sendOrder(order.id), /no coinciden/);
+  assert.throws(() => buildDropiOrderPayload(order), /no coinciden/);
   order.address = { address: "Dirección histórica" };
-  await assert.rejects(sendOrder(order.id), /todos los datos/);
+  assert.throws(() => buildDropiOrderPayload(order), /todos los datos/);
 });
 
 test("el payload de un pedido guardado conserva su fecha aunque ya haya pasado", () => {
@@ -125,84 +124,44 @@ test("el servidor rechaza una ciudad que no pertenece al departamento", () => {
   assert.equal(checkoutSchema.safeParse({ ...valid(), address: "Reclamo en oficina" }).success, true);
 });
 
-for (const [fails, colorful] of [[false,false],[true,false],[false,true],[true,true]]) {
-  test(`checkout guarda y envía exactamente las mismas notas; fallo Dropi=${fails}, colores=${colorful} (todo simulado)`, async () => {
-    // These flags exist only in this isolated test process; no real DB or network.
-    process.env.CHECKOUT_ENABLED = "true";
-    process.env.DROPI_ORDERS_ENABLED = "true";
-    process.env.DROPI_API_TOKEN = "mock-only";
-    process.env.DROPI_API_URL = "https://api.dropi.co/integrations/";
-    process.env.DATABASE_URL = "mysql://mock:mock@127.0.0.1/mock";
-    let stored: StoredOrder | undefined;
-    let customer: unknown;
-    let sent: Record<string, unknown> | undefined;
-    let requests = 0;
-    let creates = 0;
-    const product = { id: "product-test", status: "PUBLISHED", name: "Producto", salePrice: 50000, combo3Price: 100000, supplierPrice: 20000, supplierId: "2", dropiId: "1", stock: 10, colorOptions: colorful ? [{name:"Negro",hex:"#111111",variantId:"black"},{name:"Blanco",hex:"#ffffff",variantId:"white"}] : [], variants: colorful ? ["black","white"].map(id=>({id,dropiId:id,name:id,active:true,salePrice:50000,stock:10,supplierPrice:20000})) : [], category: { visible: true }, dropi: { payload: {} } };
-    stub(db.siteSetting, "findUnique", async () => ({ value: { policiesApproved: true } }));
-    stub(db.product, "findMany", async () => [product]);
-    stub(db.product, "findUniqueOrThrow", async () => product);
-    stub(db.product, "updateMany", async () => ({ count: 1 }));
-    stub(db.productVariant, "updateMany", async () => ({count:1}));
-    stub(db.customer, "create", async ({ data }: { data: object }) => (customer = { id: "customer-test", ...data }));
-    stub(db.order, "findUnique", async () => stored ?? null);
-    stub(db.order, "create", async ({ data }: { data: Record<string, unknown> & { items: { create: object[] } } }) => {
-      creates++;
-      stored = { ...data, id: "order-test", customer, items: data.items.create, dropi: null } as unknown as StoredOrder;
-      return stored;
-    });
-    stub(db.order, "findUniqueOrThrow", async () => { assert.ok(stored?.deliveryNotes); return stored; });
-    stub(db.order, "updateMany", async () => ({ count: 1 }));
-    stub(db.order, "update", async () => ({}));
-    stub(db.dropiOrder, "upsert", async () => ({}));
-    stub(db.dropiOrder, "update", async () => ({}));
-    stub(db.trackingEvent, "create", async () => ({}));
-    stub(db.notification, "createMany", async () => ({ count: 3 }));
-    stub(db, "$transaction", async (operation: unknown) => typeof operation === "function" ? operation(db) : Promise.all(operation as Promise<unknown>[]));
-    mock.method(globalThis, "fetch", async (url: URL | RequestInfo, init?: RequestInit) => {
-      const path = String(url);
-      if (path.endsWith("products/v2/1")) return new Response(JSON.stringify({ isSuccess: true, objects: { id: 1, name: "Producto", stock: 10, variations: colorful ? ["black","white"].map(id=>({id,stock:10})) : [] } }));
-      assert.equal(path, "https://api.dropi.co/integrations/orders/myorders");
-      assert.equal(init?.method, "POST");
-      assert.ok(stored?.deliveryNotes, "Las notas deben persistir antes del POST");
-      sent = JSON.parse(String(init?.body));
-      requests++;
-      return fails ? new Response("{}", { status: 401 }) : new Response(JSON.stringify({ isSuccess: true, objects: { id: "mock-order" } }));
-    });
-    const input = checkoutSchema.parse({ ...valid(), items: [{ productId: "product-test", quantity: 3, ...(colorful?{unitColors:["Negro","Blanco","Negro"]}:{}) }] });
-    if(colorful) {
-      await assert.rejects(checkout({...input,items:[{productId:"product-test",quantity:3,unitColors:["Negro"]}]}),/color válido/);
-      await assert.rejects(checkout({...input,items:[{productId:"product-test",quantity:3,unitColors:["Rojo","Blanco","Negro"]}]}),/color válido/);
-      product.variants[0].stock=1;
-      await assert.rejects(checkout(input),/suficientes unidades/);
-      product.variants[0].stock=10;
-      assert.equal(creates,0);
-    }
-    const result = await checkout(input);
-    assert.ok(stored && sent);
-    assert.equal(sent.notes, stored.deliveryNotes);
-    assert.equal(sent.notes, buildDeliveryNotes({ version: 2, additionalNotes: input.additionalNotes, requestedDate: input.requestedDate }, result.number));
-    assert.equal(sent.name, input.firstName);
-    assert.equal(sent.surname, input.lastName);
-    assert.equal(result.shipping, 0);
-    assert.equal(sent.payment_method_id, 1);
-    assert.equal(result.total, 100000);
-    const sentProducts = sent.products as { price: number; quantity: number }[];
-    assert.equal(sentProducts.reduce((sum, item) => sum + item.quantity, 0), 3);
-    assert.equal(sentProducts.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0), 10000000);
-    if(colorful) assert.deepEqual((sent.products as {variation_id:string}[]).map(p=>p.variation_id),["black","white","black"]);
-    assert.equal(requests, 1);
-    await checkout(input);
-    assert.equal(creates, 1, "El reintento idempotente no crea otro pedido");
-    assert.equal(requests, 1, "No vuelve a enviarlo a Dropi");
-    await assert.rejects(checkout({ ...input, additionalNotes: "Otra referencia" }), /ya fue utilizada/);
-  });
-}
 
+function readySettings({where}:{where:{key:string}}) {
+ if(where.key === "store") return {value:{policiesApproved:true,legalName:"Titular",address:"Dirección comercial",contactEmail:"test@example.com",whatsapp:"573001234567",privacy:"Privacidad",terms:"Condiciones",shipping:"Gratis",returns:"Garantía"}};
+ if(where.key === "telegram-binding") return {value:{chatId:"123456",adminId:"admin",linkedAt:"2026-01-01",testSentAt:"2026-01-01",receiptConfirmed:true}};
+ return {value:true};
+}
+for (const colorful of [false,true]) {
+ test(`checkout local guarda pedido, colores y outbox sin usar Dropi; colores=${colorful}`, async()=>{
+  process.env.CHECKOUT_ENABLED="true";process.env.TELEGRAM_NOTIFICATIONS_ENABLED="true";process.env.DATABASE_URL="mysql://mock:mock@localhost/mock";
+  let stored: StoredOrder | undefined;let customer:unknown;let creates=0;let queued=0;
+  const product={id:"product-test",status:"PUBLISHED",name:"Producto local",salePrice:50000,combo3Price:100000,supplierPrice:0,supplierId:null,dropiId:null,stock:10,colorOptions:colorful?[{name:"Negro",hex:"#111111",variantId:"black"},{name:"Blanco",hex:"#ffffff",variantId:"white"}]:[],variants:colorful?["black","white"].map(id=>({id,name:id,active:true,salePrice:50000,stock:10,supplierPrice:0})):[],category:{visible:true}};
+  stub(db.siteSetting,"findUnique",async (args:Parameters<typeof readySettings>[0])=>readySettings(args));
+  stub(db.product,"findMany",async()=>[product]);stub(db.product,"findUniqueOrThrow",async()=>product);
+  stub(db.product,"updateMany",async()=>({count:1}));stub(db.productVariant,"updateMany",async()=>({count:1}));
+  stub(db.customer,"create",async({data}:{data:object})=>(customer={id:"customer",...data}));
+  stub(db.order,"findUnique",async()=>stored??null);
+  stub(db.order,"create",async({data}:{data:Record<string,unknown>&{items:{create:object[]}}})=>{creates++;stored={...data,id:"order-test",customer,items:data.items.create,createdAt:new Date()} as unknown as StoredOrder;return stored;});
+  stub(db.notification,"createMany",async()=>{queued++;return{count:1};});
+  // A notification failure after commit must never turn a saved purchase into a failed checkout.
+  stub(db.order,"findUniqueOrThrow",async()=>{throw Error("Simulated notification database outage");});
+  stub(db,"$transaction",async(operation:unknown)=>typeof operation==="function"?operation(db):Promise.all(operation as Promise<unknown>[]));
+  mock.method(globalThis,"fetch",async()=>assert.fail("El checkout no debe consultar Dropi"));
+  const input=checkoutSchema.parse({...valid(),phone:"+57 304 123 4567",items:[{productId:"product-test",quantity:3,...(colorful?{unitColors:["Negro","Blanco","Negro"]}:{})}]});
+  if(colorful) await assert.rejects(checkout({...input,items:[{productId:"product-test",quantity:3,unitColors:["Negro"]}]}),/color válido/);
+  const result=await checkout(input);assert.ok(stored);assert.equal(Number(result.total),100000);
+  assert.equal(stored.customer.phone,input.phone);assert.equal(stored.customer.phoneNormalized,"3041234567");
+  assert.equal(stored.items.reduce((n,i)=>n+Math.round(Number(i.unitPrice)*100)*i.quantity,0),10000000);
+  assert.equal(queued,1);assert.equal(stored.paymentMethod,"CONTRAENTREGA");
+  if(colorful) assert.deepEqual(stored.items.map(i=>(i.snapshot as {colors:string[]}).colors[0]),["Negro","Blanco","Negro"]);
+  await checkout(input);assert.equal(creates,1);assert.equal(queued,1);
+  await assert.rejects(checkout({...input,additionalNotes:"Otra nota"}),/ya fue utilizada/);
+ });
+}
 test("demo product allows cart quotes but cannot create orders or contact Dropi", async () => {
   process.env.DATABASE_URL = "mysql://mock:mock@localhost:3306/mock";
   process.env.CHECKOUT_ENABLED = "true";
-  stub(db.siteSetting, "findUnique", async () => ({ value: { policiesApproved: true } }));
+  process.env.TELEGRAM_NOTIFICATIONS_ENABLED = "true";
+  stub(db.siteSetting, "findUnique", async (args:Parameters<typeof readySettings>[0]) => readySettings(args));
   stub(db.order, "findUnique", async () => null);
   stub(db.product, "findMany", async () => [{ id: "product-test", slug: "auriculares-demo-tecnotop", name: "Demo", salePrice: 99900, stock: 20, variants: [] }]);
   stub(db, "$transaction", async () => assert.fail("No debe crear una orden"));

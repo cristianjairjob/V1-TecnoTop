@@ -6,11 +6,8 @@ import { db } from "./db";
 import { checkoutSchema, cartSchema } from "./validation";
 import { AppError } from "./http";
 import { hash } from "./auth";
-import { storeSettings } from "./catalog";
-import { getDropiProduct } from "@/services/dropi/products";
-import { productStock } from "@/services/dropi/inventory";
-import { safePayload } from "@/services/dropi/types";
-import { sendOrder } from "@/services/dropi/orders";
+import { checkoutReadiness } from "./checkout-readiness";
+import { notifyOrder } from "@/services/telegram/notifications";
 import { createOrderDetails } from "./order-details";
 import { offerTotal, allocateUnitPrices, referenceLineTotal } from "./product-offers";
 export async function quote(items: z.infer<typeof cartSchema>, code = "") {
@@ -92,7 +89,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
       503,
       "Estamos preparando la tienda. Las compras todavía no están habilitadas.",
     );
-  if (!(await storeSettings()).policiesApproved)
+  if (!(await checkoutReadiness()).enabled)
     throw new AppError(
       503,
       "La tienda aún no está habilitada para recibir pedidos.",
@@ -116,39 +113,15 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     return selected.map(({color,variant},index)=>({...line,variant,variantId:variant.id,unitPrice:Number(variant.salePrice),quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
   });
   if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
-    throw new AppError(409, "Este carrito contiene un producto de demostración. Puedes probar el carrito, pero no confirmar un pedido con este producto.");
-  if (new Set(q.lines.map((l) => l.product.supplierId)).size !== 1)
-    throw new AppError(
-      409,
-      "Por ahora, selecciona productos del mismo proveedor en cada pedido.",
-    );
-  for (const l of q.lines) {
-    if (!l.product.dropiId || !l.product.supplierId)
-      throw new AppError(409, "Producto pendiente de verificación.");
-    const live = await getDropiProduct(l.product.dropiId);
-    const variant = l.variant
-      ? live.variations?.find((v) => v.id === l.variant!.dropiId)
-      : undefined;
-    const stock = l.variant
-      ? (variant?.warehouse_product_variation?.reduce(
-          (n, w) => n + w.stock,
-          0,
-        ) ??
-        variant?.stock ??
-        0)
-      : productStock(live);
-    const requestedStock = q.lines.filter(other => other.productId === l.productId && other.variantId === l.variantId).reduce((sum, other) => sum + other.quantity, 0);
-    if (stock < requestedStock)
-      throw new AppError(
-        409,
-        `El inventario de ${l.product.name} cambió. Actualiza tu carrito.`,
-      );
-  }
-  // Discounts are allocated per line; the sum of Dropi prices must equal total_order.
+    throw new AppError(409, "Este es un producto de demostración. No permite confirmar pedidos.");
   let order;
   try {
     order = await db.$transaction(
       async (tx) => {
+        if (q.promotion) {
+          const promotion = await tx.promotion.findUnique({where:{code:q.promotion.code}});
+          if (!promotion?.active || promotion.percent !== q.promotion.percent || promotion.startsAt > new Date() || promotion.endsAt < new Date() || Number(promotion.minimum) > q.subtotal) throw new AppError(409, "La promoción cambió. Actualiza tu pedido.");
+        }
         for (const l of q.lines) {
           const p = await tx.product.findUniqueOrThrow({
             where: { id: l.productId },
@@ -161,19 +134,23 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
           )
             throw new AppError(
               409,
-              "El catálogo cambió. Actualiza tu carrito.",
+              "El catálogo cambió. Actualiza tu pedido.",
             );
           if (l.variant) {
             const v = p.variants.find((v) => v.id === l.variantId);
             if (!v?.active || Number(v.salePrice) !== l.unitPrice)
               throw new AppError(
                 409,
-                "La variante cambió. Actualiza tu carrito.",
+                "La variante cambió. Actualiza tu pedido.",
               );
           }
           if (JSON.stringify(p.colorOptions) !== JSON.stringify(l.product.colorOptions)) throw new AppError(409,"Los colores cambiaron. Actualiza tu pedido.");
           if (offerTotal(l.originUnitSubtotal/l.originQuantity, l.originQuantity, p) !== l.originTotal)
-            throw new AppError(409, "El precio del combo cambió. Actualiza tu carrito.");
+            throw new AppError(409, "El precio del combo cambió. Actualiza tu pedido.");
+          if (l.variantId) {
+            const totalStock = await tx.product.updateMany({ where: { id: l.productId, stock: { gte: l.quantity } }, data: { stock: { decrement: l.quantity } } });
+            if (!totalStock.count) throw new AppError(409, "El inventario cambió. Actualiza tu pedido.");
+          }
           const result = l.variantId
             ? await tx.productVariant.updateMany({
                 where: { id: l.variantId, stock: { gte: l.quantity } },
@@ -186,13 +163,13 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
           if (!result.count)
             throw new AppError(
               409,
-              "El inventario cambió. Actualiza tu carrito.",
+              "El inventario cambió. Actualiza tu pedido.",
             );
         }
         const number = `TT-${randomBytes(6).toString("hex").toUpperCase()}`;
         const details = createOrderDetails(input, number);
         const customer = await tx.customer.create({ data: details.customer });
-        return tx.order.create({
+        const saved = await tx.order.create({
           data: {
             number,
             idempotencyKey,
@@ -205,7 +182,9 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
             total: q.total,
             shipping: 0,
             promotionCode: q.promotion?.code,
-            privacyVersion: "v1",
+            privacyVersion: "v5-telegram",
+            paymentMethod: "CONTRAENTREGA",
+            pricingSnapshot: { baseSubtotal: q.baseSubtotal + input.items.reduce((n,i)=>n+i.quantity,0)*30000, savings: q.savings + input.items.reduce((n,i)=>n+i.quantity,0)*30000, productBaseSubtotal:q.baseSubtotal, productSavings:q.savings, shippingSavings:input.items.reduce((n,i)=>n+i.quantity,0)*30000 },
             items: {
               create: q.lines.flatMap((l) => allocateUnitPrices(l.effectiveTotal, l.quantity).map((part) => ({
                 productId: l.product.id,
@@ -218,9 +197,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
                 supplierPrice:
                   l.variant?.supplierPrice ?? l.product.supplierPrice,
                 supplierId: l.product.supplierId,
-                snapshot: safePayload(
-                  l.product.dropi?.payload ?? {},
-                ) as Prisma.InputJsonValue,
+                snapshot: { variant: l.variant?.name ?? "", colors: l.unitColors ?? [], offer: l.originQuantity === 2 ? "Combo pareja · 2 unidades" : l.originQuantity === 3 ? "Combo familiar · 3 unidades" : "Individual", originalQuantity: l.originQuantity, comboTotal: l.originTotal },
               }))),
             },
             events: {
@@ -232,6 +209,8 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
             },
           },
         });
+        await tx.notification.createMany({ data: [{orderId: saved.id, channel: "TELEGRAM", event: "ORDER_RECEIVED", status: "PENDING"}], skipDuplicates: true });
+        return saved;
       },
       { isolationLevel: "Serializable", timeout: 15000 },
     );
@@ -245,13 +224,6 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     }
     throw e;
   }
-  await db.notification.createMany({
-    data: [...(input.email ? ["EMAIL"] : []), "ADMIN", "WHATSAPP"].map((channel) => ({
-      orderId: order.id,
-      channel,
-      event: "ORDER_RECEIVED",
-    })),
-  });
-  await sendOrder(order.id);
+  try { await notifyOrder(order.id); } catch { /* The durable outbox remains pending; never fail an already committed purchase. */ }
   return order;
 }

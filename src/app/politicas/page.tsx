@@ -38,6 +38,7 @@ export default async function Policies() {
           </p>
         </section>
       ))}
+      <section id="notificaciones-internas"><h2>Notificaciones internas de pedidos</h2><p>Para gestionar tu compra, TecnoTop almacena tus datos de contacto, dirección y productos solicitados y utiliza Telegram como canal privado de notificaciones al titular de la tienda. Solo el personal autorizado puede acceder a estas notificaciones. No se enviarán mensajes automáticos a tu WhatsApp. Puedes solicitar información, actualización o eliminación de tus datos mediante el correo de contacto, sujeto a las obligaciones de conservación aplicables.</p></section>
       <h2>Contacto</h2>
       <p>
         {s.legalName}

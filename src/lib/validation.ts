@@ -1,15 +1,9 @@
+import { normalizedPhone } from "./whatsapp";
 import { z } from "zod";
 import { currentDeliverySchema, requestedDeliveryDateSchema } from "./delivery";
 import { isColombiaLocation } from "./colombia-locations";
 export const optionalEmailSchema = z.string().trim().pipe(z.union([z.email().max(180), z.literal("")])).default("");
-export const phoneSchema = z
-  .string()
-  .transform((v) => v.replace(/[\s()+-]/g, "").replace(/^57(?=3\d{9}$)/, ""))
-  .pipe(
-    z
-      .string()
-      .regex(/^3\d{9}$/, "Escribe un celular colombiano de 10 dígitos."),
-  );
+export const phoneSchema = z.string().max(40).refine(v => normalizedPhone(v) !== null, "Escribe un celular colombiano válido.");
 export const cartSchema = z
   .array(
     z.object({

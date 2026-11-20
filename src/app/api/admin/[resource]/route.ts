@@ -1,4 +1,5 @@
 import { stockSchema } from "@/lib/product-stock";
+import { randomUUID } from "node:crypto";
 import { colorOptionsSchema } from "@/lib/product-colors";
 import { NextResponse } from "next/server";
 import { Prisma, OrderStatus } from "@prisma/client";
@@ -20,6 +21,7 @@ export async function GET(req: Request, ctx: Context) {
   try {
     await requireAdmin();
     const { resource } = await ctx.params;
+    if (["dropi-diagnostic", "dropi-import", "dropi-import-id", "dropi-sync", "order-send"].includes(resource)) throw new AppError(409, "Integración externa pausada en V5.");
     const page = Math.max(
       0,
       Math.min(100000, Number(new URL(req.url).searchParams.get("page")) || 0),
@@ -38,7 +40,7 @@ export async function GET(req: Request, ctx: Context) {
           orders: await db.order.count(),
           errors: await db.order.count({ where: { status: "ERROR_DROPI" } }),
           dropiConfigured: Boolean(process.env.DROPI_API_TOKEN),
-          ordersEnabled: process.env.DROPI_ORDERS_ENABLED === "true",
+          ordersEnabled: false,
           checkoutEnabled: process.env.CHECKOUT_ENABLED === "true",
         };
         break;
@@ -94,7 +96,7 @@ export async function GET(req: Request, ctx: Context) {
         });
         break;
       case "settings":
-        data = await db.siteSetting.findMany();
+        data = await db.siteSetting.findMany({ where: { key: { in: ["store", "home"] } } });
         break;
       default:
         throw new AppError(404, "Sección no encontrada.");
@@ -116,6 +118,19 @@ export async function POST(req: Request, ctx: Context) {
     let data: unknown;
     let entityId = resource;
     switch (resource) {
+      case "product-create": {
+        const category = await db.category.findFirst({ where: { visible: true }, orderBy: { position: "asc" } });
+        data = await db.product.create({ data: { slug: `producto-${randomUUID()}`, name: "Nuevo producto", description: "", images: [], stock: 0, status: "DRAFT", categoryId: category?.id }, include: { variants: true } });
+        entityId = (data as { id: string }).id;
+        break;
+      }
+      case "variant-create": {
+        const input = z.object({ productId: id, name: z.string().trim().min(1).max(100) }).parse(body);
+        const product = await db.product.findUniqueOrThrow({ where: { id: input.productId } });
+        data = await db.productVariant.create({ data: { productId: product.id, dropiId: `local-${randomUUID()}`, name: input.name, attributes: {}, stock: 0, salePrice: product.salePrice } });
+        entityId = product.id;
+        break;
+      }
       case "demo-product": {
         const category = await db.category.findFirst({ where: { visible: true }, orderBy: { position: "asc" } });
         if (!category) throw new AppError(400, "Activa una categoría para mostrar la demostración.");
@@ -126,7 +141,7 @@ export async function POST(req: Request, ctx: Context) {
             slug: "auriculares-demo-tecnotop",
             name: "Auriculares TecnoTop · DEMOSTRACIÓN",
             brand: "PRODUCTO FICTICIO",
-            description: "Producto ficticio creado únicamente para probar el diseño de la tienda. No está disponible para la venta ni corresponde a un producto de Dropi.\n\nPrecio de ejemplo: $99.900 COP. Puedes editarlo en Administración → Productos para comprobar que cambia únicamente en esta ficha.\n\nLas imágenes son ilustraciones de demostración, no fotografías de un producto real.",
+            description: "Producto ficticio creado únicamente para probar el diseño de la tienda. No está disponible para la venta.\n\nPrecio de ejemplo: $99.900 COP. Puedes editarlo en Administración → Productos para comprobar que cambia únicamente en esta ficha.\n\nLas imágenes son ilustraciones de demostración, no fotografías de un producto real.",
             images: ["https://tecnotop.com.co/demo/headphones-blue.svg", "https://tecnotop.com.co/demo/headphones-white.svg"],
             salePrice: 99900,
             stock: 20,

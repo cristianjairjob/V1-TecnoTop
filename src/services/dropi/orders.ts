@@ -1,3 +1,4 @@
+import { dropiPaused } from "@/lib/integrations";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/http";
@@ -7,7 +8,7 @@ import { safePayload } from "./types";
 import { z } from "zod";
 import { buildDropiOrderPayload } from "./order-payload";
 export async function sendOrder(orderId: string) {
-  if (process.env.DROPI_ORDERS_ENABLED !== "true")
+  if (dropiPaused())
     return { sent: false, reason: "DISABLED" };
   const order = await db.order.findUniqueOrThrow({
     where: { id: orderId },

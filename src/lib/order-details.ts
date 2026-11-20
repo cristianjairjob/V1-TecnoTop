@@ -1,3 +1,4 @@
+import { normalizedPhone } from "./whatsapp";
 import { z } from "zod";
 import { checkoutSchema } from "./validation";
 import { buildDeliveryNotes } from "./delivery";
@@ -13,7 +14,7 @@ export function createOrderDetails(input: z.infer<typeof checkoutSchema>, number
     requestedDate: input.requestedDate,
   };
   return {
-    customer: { ...buyer, name: `${buyer.firstName} ${buyer.lastName}` },
+    customer: { ...buyer, phoneNormalized: normalizedPhone(buyer.phone), name: `${buyer.firstName} ${buyer.lastName}` },
     address: {
       state: input.state, city: input.city, address: input.address,
       complement: input.complement, buyer, delivery,

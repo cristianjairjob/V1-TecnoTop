@@ -13,6 +13,9 @@ enum ProductStatus {
 }
 enum OrderStatus {
   PENDIENTE
+  CONFIRMADO
+  PREPARANDO
+  DESPACHADO
   VALIDANDO
   ENVIANDO_A_DROPI
   ACEPTADO_POR_DROPI
@@ -109,6 +112,7 @@ model Customer {
   name String
   email String
   phone String
+  phoneNormalized String?
   orders Order[]
   createdAt DateTime @default(now())
   @@index([phone])
@@ -144,6 +148,8 @@ model Order {
   shipping Decimal @default(0) @db.Decimal(12,2)
   total Decimal @db.Decimal(12,2)
   promotionCode String?
+  paymentMethod String @default("CONTRAENTREGA")
+  pricingSnapshot Json?
   privacyVersion String
   items OrderItem[]
   dropi DropiOrder?
@@ -256,12 +262,16 @@ model RateLimit {
   expiresAt DateTime
 }
 model Notification {
+  attempts Int @default(0)
+  sentAt DateTime?
+  lastError String?
+  createdAt DateTime @default(now())
+  parts NotificationPart[]
   id String @id @default(cuid())
   orderId String
   channel String
   event String
   status String @default("PENDING_CONFIGURATION")
-  createdAt DateTime @default(now())
   @@unique([orderId,channel,event])
 }
 
@@ -272,4 +282,28 @@ model ProductImage {
   data Bytes @db.LongBlob
   createdAt DateTime @default(now())
   @@index([productId])
+}
+
+model NotificationPart {
+ id String @id @default(cuid())
+ notificationId String
+ notification Notification @relation(fields:[notificationId],references:[id],onDelete:Cascade)
+ position Int
+ text String @db.Text
+ status String @default("PENDING")
+ attempts Int @default(0)
+ messageId String?
+ sentAt DateTime?
+ startedAt DateTime?
+ lastError String?
+ @@unique([notificationId,position])
+}
+model TelegramLinkCode {
+ id String @id @default(cuid())
+ codeHash String @unique
+ adminId String
+ sessionId String
+ expiresAt DateTime
+ usedAt DateTime?
+ createdAt DateTime @default(now())
 }

@@ -189,6 +189,7 @@ export function Admin() {
   }, [section, page, revision]);
   function choose(id: string) {
     if (uploading) return;
+    if (id === "orders") { router.push("/admin/pedidos"); return; }
     setSection(id);
     setData(null);
     setEdit(null);
@@ -278,6 +279,7 @@ export function Admin() {
           TecnoTop <small>Admin</small>
         </h2>
         <nav>
+          <button onClick={() => router.push("/admin/configuracion/notificaciones")}>Telegram y notificaciones</button>
           {navigation.map(({ id, name, Icon }) => (
             <button
               className={section === id ? "active" : ""}
@@ -305,6 +307,7 @@ export function Admin() {
             <span className="eyebrow">TU TIENDA, BAJO CONTROL</span>
             <h1>{navigation.find((n) => n.id === section)?.name}</h1>
           </div>
+          {section === "products" && <button className="button" disabled={busy || uploading} onClick={async () => { const result=await mutate("product-create",{}); if(result) open(result.data); }}>Crear producto local</button>}
           {["categories", "collections", "promotions"].includes(section) && (
             <button
               className="button"
@@ -397,7 +400,7 @@ export function Admin() {
         {section === "dropi" && (
           <div className="panel">
             <h2>Catálogo e inventario</h2>
-            <DropiDiagnostic />
+            <p>Integración pausada. Las compras utilizan inventario local y las notificaciones se gestionan en Telegram.</p>
             <p>
               Copia el ID del producto en Dropi. Los productos nuevos se guardan
               como borradores. Si ya existe, se actualizan stock, costo y variantes
@@ -489,7 +492,7 @@ export function Admin() {
                       onChange={(v) => update("name", v)}
                     />
                     <label>Stock disponible (unidades)<input type="number" min={0} max={1000000} step={1} required value={String(edit.stock ?? "")} onChange={e => update("stock", e.target.value === "" ? null : Number(e.target.value))} /></label>
-                    {Boolean(edit.dropiId) && <p>El stock manual se guarda en la tienda. La siguiente sincronización de Dropi actualizará estas cantidades con el inventario del proveedor.</p>}
+                    {Boolean(edit.dropiId) && <p>El stock se gestiona localmente. La integración externa está pausada.</p>}
                     <Field
                       label="Marca"
                       value={edit.brand}
@@ -550,6 +553,7 @@ export function Admin() {
                       value={edit.popular}
                       onChange={(v) => update("popular", v)}
                     />
+                    <button type="button" disabled={busy || uploading} onClick={async () => {const name=window.prompt("Nombre de la variante local (por ejemplo, Azul)");if(!name?.trim())return;const result=await mutate("variant-create",{productId:edit.id,name});if(result)update("variants",[...rows(edit.variants),{...result.data,salePrice:result.data.salePrice==null?null:Number(result.data.salePrice)}]);}}>Crear variante local de inventario</button>
                     <fieldset><legend>¿Este producto tiene diferentes variantes de color?</legend>
                       <label><input type="checkbox" checked={rows(edit.colorOptions).length>0} onChange={e=>update("colorOptions",e.target.checked?[{name:"Negro",hex:"#111111",variantId:""}]:[])} /> Sí, tiene colores</label>
                       {rows(edit.colorOptions).length>0 && <><label>¿Cuántos colores?<input type="number" min={1} max={100} value={rows(edit.colorOptions).length} onChange={e=>{const n=Math.max(1,Math.min(100,Number(e.target.value)||1)); const current=rows(edit.colorOptions); update("colorOptions",Array.from({length:n},(_,i)=>current[i]??{name:"Color "+(i+1),hex:"#808080",variantId:""}));}} /></label>
@@ -994,27 +998,6 @@ export function Admin() {
       </div>
     </div>
   );
-}
-function DropiDiagnostic() {
-  const [result, setResult] = useState<Row | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  return <section aria-label="Conexión con Dropi">
-    <button type="button" disabled={busy} onClick={async () => {
-      setBusy(true); setError(""); setResult(null);
-      try { setResult(await api("dropi-diagnostic")); }
-      catch (e) { setError(e instanceof Error ? e.message : "No se pudo comprobar la conexión."); }
-      finally { setBusy(false); }
-    }}>{busy ? "Comprobando…" : "Comprobar conexión con Dropi"}</button>
-    <p className="small">Consulta un producto sin importarlo ni crear pedidos. No habilita ventas.</p>
-    {error && <p role="alert">{error}</p>}
-    {result && <div role="status">
-      <p>{result.connected ? "Conexión verificada" : `Conexión rechazada o no verificada (HTTP ${result.httpStatus})`}</p>
-      {result.accessDenied === true && <p>Dropi respondió Access denied. Solicita revisar la autorización de la integración, dominio e IP.</p>}
-      {Boolean(result.observedIp) && <p>IP que recibe Dropi: {string(result, "observedIp")}</p>}
-      <p>Última comprobación: {string(result, "checkedAt")}</p>
-    </div>}
-  </section>;
 }
 function DeliveryDetails({ order }: { order: Row }) {
   const [copyStatus, setCopyStatus] = useState("");

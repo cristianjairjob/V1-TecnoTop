@@ -1,3 +1,4 @@
+import { normalizedPhone } from "@/lib/whatsapp";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
       .parse(await readBody(req));
     await rateLimit(`tracking:${d.number}`, 8, 900);
     const o = await db.order.findFirst({
-      where: { number: d.number, customer: { phone: d.phone } },
+      where: { number: d.number, customer: { OR: [{ phone: d.phone }, { phone: normalizedPhone(d.phone)! }, { phoneNormalized: normalizedPhone(d.phone) }] } },
       include: { events: { orderBy: { createdAt: "asc" } }, shipments: true },
     });
     if (!o) throw new AppError(404, "No encontramos un pedido con esos datos.");

@@ -41,8 +41,8 @@ test("rechaza cantidades negativas, duplicados y más de 20 unidades", () => {
     false,
   );
 });
-test("normaliza celular colombiano y rechaza teléfonos inválidos", () => {
-  assert.equal(phoneSchema.parse("+57 304 593 9644"), "3045939644");
+test("conserva el celular original y rechaza teléfonos inválidos", () => {
+  assert.equal(phoneSchema.parse("+57 304 593 9644"), "+57 304 593 9644");
   assert.equal(phoneSchema.safeParse("123").success, false);
 });
 test("impide publicación sin clasificación, imágenes o precio de variante", () => {

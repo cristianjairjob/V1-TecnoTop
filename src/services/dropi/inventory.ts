@@ -1,3 +1,4 @@
+import { dropiPaused } from "@/lib/integrations";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/catalog-defaults";
@@ -26,6 +27,7 @@ export function productImages(p: DropiProductData) {
   });
 }
 export async function importDropiProduct(id: string) {
+  if (dropiPaused()) throw new Error("DROPI_PAUSED");
   const p = await getDropiProduct(id);
   const price = p.sale_price ?? p.supplier_price ?? 0;
   return db.$transaction(async (tx) => {
@@ -102,6 +104,7 @@ export async function importDropiProductById(input: string) {
   }
 }
 export async function importPage(offset = 0, keywords = "") {
+  if (dropiPaused()) throw new Error("DROPI_PAUSED");
   let count = 0;
   try {
     const products = await listDropiProducts(offset, 10, keywords);
@@ -130,6 +133,7 @@ export async function importPage(offset = 0, keywords = "") {
   }
 }
 export async function syncInventory(offset = 0) {
+  if (dropiPaused()) return {count:0,nextOffset:offset,hasMore:false,paused:true};
   const products = await db.product.findMany({
     where: { dropiId: { not: null }, status: { not: "ARCHIVED" } },
     take: 20,

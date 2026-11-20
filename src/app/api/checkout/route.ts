@@ -1,3 +1,4 @@
+import { normalizedPhone } from "@/lib/whatsapp";
 import { NextResponse } from "next/server";
 import { checkout } from "@/lib/checkout";
 import { checkoutSchema } from "@/lib/validation";
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
     sameOrigin(req);
     await rateLimit("checkout-global", 100, 60);
     const input = checkoutSchema.parse(await readBody(req));
-    await rateLimit(`checkout:${input.phone}`, 5, 900);
+    await rateLimit(`checkout:${normalizedPhone(input.phone)}`, 5, 900);
     const order = await checkout(input);
     return NextResponse.json(
       {

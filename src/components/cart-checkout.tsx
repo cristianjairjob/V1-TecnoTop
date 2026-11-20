@@ -378,7 +378,7 @@ export function CartCheckout({
               {busy
                 ? "Confirmando…"
                 : enabled
-                  ? "Confirmar pedido"
+                  ? "Comprar"
                   : "Compras aún no habilitadas"}{" "}
               <ArrowRight size={17} />
             </button>

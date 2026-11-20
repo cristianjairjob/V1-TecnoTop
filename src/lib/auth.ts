@@ -4,15 +4,16 @@ import { db } from "./db";
 import { AppError } from "./http";
 export const hash = (v: string) => createHash("sha256").update(v).digest("hex");
 export const sessionCookie = "tecnotop_admin";
-export async function currentAdmin() {
+export async function currentAdminSession() {
   const token = (await cookies()).get(sessionCookie)?.value;
   if (!token) return null;
   const s = await db.adminSession.findUnique({
     where: { tokenHash: hash(token) },
     include: { admin: true },
   });
-  return s && s.expiresAt > new Date() && s.admin.active ? s.admin : null;
+  return s && s.expiresAt > new Date() && s.admin.active ? s : null;
 }
+export async function currentAdmin() { return (await currentAdminSession())?.admin ?? null; }
 export async function requireAdmin() {
   const admin = await currentAdmin();
   if (!admin) throw new AppError(401, "Inicia sesión para continuar.");
