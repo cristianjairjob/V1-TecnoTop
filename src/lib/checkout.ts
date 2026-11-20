@@ -137,7 +137,8 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
         variant?.stock ??
         0)
       : productStock(live);
-    if (stock < l.quantity)
+    const requestedStock = q.lines.filter(other => other.productId === l.productId && other.variantId === l.variantId).reduce((sum, other) => sum + other.quantity, 0);
+    if (stock < requestedStock)
       throw new AppError(
         409,
         `El inventario de ${l.product.name} cambió. Actualiza tu carrito.`,
