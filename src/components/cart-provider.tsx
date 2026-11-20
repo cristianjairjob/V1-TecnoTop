@@ -8,6 +8,7 @@ import {
 export type CartLine = {
   productId: string;
   variantId?: string;
+  unitColors?: string[];
   name: string;
   image: string;
   price: number;

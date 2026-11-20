@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { CheckoutTimer } from "./checkout-timer";
 import { ShoppingBag, Check, Banknote, Truck, Flame, ShieldCheck } from "lucide-react";
 import { offerTotal } from "@/lib/product-offers";
 import { directCheckoutUrl } from "@/lib/direct-checkout";
@@ -16,6 +17,7 @@ export function AddToCart({
     price: number;
     previousPrice?: number;
     demo?: boolean;
+    hasColors?: boolean;
     combo2Price?: number | null;
     combo3Price?: number | null;
     pairBestSeller?: boolean;
@@ -33,12 +35,12 @@ export function AddToCart({
   const previousPrice = !v && (product.previousPrice ?? 0) > price ? product.previousPrice! : 0;
   const selectedTotal = offerTotal(price, quantity, product);
   function add() {
-    if (!Number.isInteger(quantity) || quantity < 1 || price <= 0 || stock < quantity || (product.variants.length && !v)) return;
+    if (!Number.isInteger(quantity) || quantity < 1 || price <= 0 || stock < quantity || (!product.hasColors && product.variants.length && !v)) return;
     router.push(directCheckoutUrl(product.id, quantity, variantId));
   }
   return (
     <div className="buy-panel purchase-card">
-      {product.demo && <p className="demo-purchase-notice">Modo demostración · Puedes probar el formulario. Este producto no permite confirmar pedidos.</p>}
+      <CheckoutTimer floatingEnabled={false} />
       <div className="product-unit-price" aria-live="polite"><strong>{money(selectedTotal)}</strong><span><Banknote size={17} /> Paga al recibir</span></div>
       <p className="purchase-selection">{quantity} {quantity === 1 ? "unidad" : "unidades"} · {money(selectedTotal / quantity)} c/u{v ? ` · ${v.name}` : ""}</p>
       <fieldset className="product-offers"><legend>ELIGE TU OPCIÓN</legend>
@@ -53,19 +55,19 @@ export function AddToCart({
           {count === 2 ? <span className="offer-badge pair-popular-badge"><Flame size={17} /> {product.pairBestSeller ? "EL MÁS COMPRADO" : "COMBO DESTACADO"}</span> : quantity === count && <span className="offer-badge"><Check size={12} /> SELECCIONADO</span>}
         </label>;})}
       </fieldset>
-      {product.variants.length > 0 && (
+      {!product.hasColors && product.variants.length > 0 && (
         <fieldset className="product-variants"><legend>VARIANTE <span>— {v?.name || "Elige tu opción"}</span></legend>
           {product.variants.map((variant) => <button type="button" key={variant.id} aria-pressed={variantId === variant.id} disabled={variant.stock < 1} onClick={() => { setVariantId(variant.id); setQuantity(1); setMessage(""); }}>{variant.name}{variant.stock < 1 ? " · Agotado" : ""}</button>)}
         </fieldset>
       )}
-      <div className="purchase-delivery-note free-shipping-banner"><Truck size={28} /><span><strong>¡ENVÍO GRATIS!</strong><small>A toda Colombia · Pagas al recibir</small></span></div>
+      <div className="purchase-delivery-note free-shipping-banner"><Truck size={28} /><span><strong>¡ENVÍO GRATIS!</strong><strong>¡PAGO CONTRAENTREGA!</strong><small>A toda Colombia · Pagas al recibir</small></span></div>
       <label className="purchase-custom-quantity">Cantidad<input type="number" aria-label="Cantidad" value={quantity} min={1} max={Math.min(stock, 20)} onChange={(e) => {setQuantity(Math.max(1, Math.min(20, Math.trunc(Number(e.target.value)) || 1))); setMessage("");}} /></label>
-      {(product.combo2Price || product.combo3Price) && <p className="combo-quantity-note">Los combos aplican a exactamente 2 o 3 unidades de la misma variante. Otras cantidades usan el precio individual.</p>}
+      {(product.combo2Price || product.combo3Price) && <p className="combo-quantity-note">Los combos aplican a 2 o 3 unidades. Si hay colores disponibles, podrás elegir uno para cada unidad en el formulario.</p>}
       <div className="buy-actions">
         <button
           className="button"
           onClick={add}
-          disabled={price <= 0 || stock < quantity || Boolean(product.variants.length && !v)}
+          disabled={price <= 0 || stock < quantity || Boolean(!product.hasColors && product.variants.length && !v)}
         >
           <ShoppingBag size={18} />{" "}
           <span>{stock < 1 ? "Agotado" : "COMPRAR AHORA"}<small>{product.demo ? "Prueba el formulario" : "Pago contraentrega · Envío gratis"}</small></span>

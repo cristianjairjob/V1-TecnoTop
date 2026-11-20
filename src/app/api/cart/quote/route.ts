@@ -1,3 +1,4 @@
+import { productColors } from "@/lib/product-colors";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { quote } from "@/lib/checkout";
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
         quantity: l.quantity,
         lineTotal: l.lineTotal,
         effectiveTotal: l.effectiveTotal,
+        colors: productColors(l.product.colorOptions).map(({name,hex})=>({name,hex})),
         pairBestSeller: l.product.pairBestSeller,
         offers: [1, 2, 3].map((quantity) => ({ quantity, total: offerTotal(l.unitPrice, quantity, l.product), available: (l.variant?.stock ?? l.product.stock) >= quantity })),
       })),

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
 import { CHECKOUT_CYCLE_MS, cycleSeconds, formatCountdown } from "@/lib/checkout-timer";
-export function CheckoutTimer() {
+export function CheckoutTimer({ floatingEnabled = true }: { floatingEnabled?: boolean }) {
   const timerRef = useRef<HTMLElement>(null);
   const [floating, setFloating] = useState(false);
   const [seconds, setSeconds] = useState(CHECKOUT_CYCLE_MS / 1000);
@@ -21,7 +21,7 @@ export function CheckoutTimer() {
   }, []);
   useEffect(() => {
     const element = timerRef.current;
-    if (!element) return;
+    if (!element || !floatingEnabled) return;
     let observer: IntersectionObserver;
     const observe = () => {
       observer?.disconnect();
@@ -34,7 +34,7 @@ export function CheckoutTimer() {
     observe();
     window.addEventListener("resize", observe);
     return () => { observer.disconnect(); window.removeEventListener("resize", observe); };
-  }, []);
+  }, [floatingEnabled]);
   return <><section ref={timerRef} className="checkout-countdown" aria-label="Temporizador del formulario">
     <div className="checkout-countdown-message"><Timer size={28} aria-hidden="true" /><strong>¡Aprovecha la oferta y haz tu pedido!</strong></div>
     <div className="checkout-clock" role="timer" aria-live="off" aria-label="Temporizador">{formatCountdown(seconds)}</div>

@@ -1,3 +1,4 @@
+import { colorOptionsSchema } from "@/lib/product-colors";
 import { NextResponse } from "next/server";
 import { Prisma, OrderStatus } from "@prisma/client";
 import { z } from "zod";
@@ -148,6 +149,7 @@ export async function POST(req: Request, ctx: Context) {
             combo3Price: comboPriceSchema,
             buyersCount: z.number().int().min(0).max(2147483647).nullable().optional(),
             pairBestSeller: z.boolean().optional(),
+            colorOptions: colorOptionsSchema.optional(),
             buyerAvatars: z.array(z.url().refine((s) => s.startsWith("https://"))).max(3).optional(),
             categoryId: id.nullable(),
             brand: z.string().max(100).nullable(),
@@ -172,6 +174,7 @@ export async function POST(req: Request, ctx: Context) {
           throw new AppError(400, "Categoría inválida.");
         if (d.variants.some((v) => !p.variants.find((x) => x.id === v.id)))
           throw new AppError(400, "Variante inválida.");
+        if (d.colorOptions?.some(c => c.variantId && !p.variants.some(v => v.id === c.variantId && v.active))) throw new AppError(400, "Asocia el color a una variante activa de este producto.");
         const merged = p.variants.map((v) => ({
           ...v,
           salePrice:

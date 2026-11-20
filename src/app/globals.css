@@ -2143,3 +2143,17 @@ button:focus-visible {
 .floating-clock-value { font: 800 18px/1.2 ui-monospace,monospace; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 
 .order-summary .summary-discount { color: #c52236; font-weight: 800; }
+
+.product-hero-image { position: relative; touch-action: pan-y; }
+.gallery-arrow { position:absolute; top:50%; transform:translateY(-50%); z-index:2; border:1px solid #c5eaff; border-radius:50%; background:#ffffffdf; color:#06345c; width:40px; height:40px; display:grid; place-items:center; }
+.gallery-arrow.prev { left:10px; } .gallery-arrow.next { right:10px; }
+.gallery-stock-alert { position:absolute; right:12px; bottom:12px; z-index:2; padding:8px 12px; border-radius:10px; background:#c52236; color:white; font-weight:800; font-size:13px; box-shadow:0 3px 12px #720d2333; }
+.purchase-card .product-offers .offer-free-shipping { display:block; line-height:1.4; } .offer-free-shipping svg { display:inline-block; vertical-align:middle; margin-right:4px; }
+.purchase-card .product-offers label { min-height:0; }
+.purchase-card .product-offers label.pair-offer.selected { border-color:#ff793f; background:linear-gradient(120deg,#782e30,#592b22); box-shadow:0 0 0 3px #ff8a3d40; }
+.free-shipping-banner { animation: delivery-glow 3s ease-in-out infinite; }
+@keyframes delivery-glow { 50% { box-shadow:0 0 18px #48d9ff70; border-color:#61dfff; } }
+@media(prefers-reduced-motion:reduce) { .free-shipping-banner { animation:none; } }
+
+.product-color-list { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; } .product-color-list span { display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid #c8dfef; border-radius:20px; background:#f1f9ff; } .product-color-list i { display:inline-block; width:22px; height:22px; border:1px solid #a3b8c7; border-radius:50%; }
+.checkout-unit-colors { border:1px solid #c4e1f5; padding:14px; border-radius:12px; margin:12px 0; } .checkout-unit-colors label { display:grid; gap:5px; margin:8px 0; } .admin-color-row { padding:12px; margin:10px 0; border:1px solid #bbd4e5; border-radius:12px; display:grid; gap:8px; }

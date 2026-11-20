@@ -1,3 +1,4 @@
+import { productColors } from "@/lib/product-colors";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Truck, ShieldCheck, Check, PackageCheck, MessageCircle, Banknote, BadgeCheck } from "lucide-react";
@@ -28,7 +29,8 @@ export default async function ProductPage({
         <Link href={`/${p.category?.slug}`}>{p.category?.name}</Link> / {p.name}
       </div>
       <div className="product-detail">
-        <div><ProductGallery images={images} name={p.name} />
+        <div><ProductGallery images={images} name={p.name} stock={p.stock} />
+          {productColors(p.colorOptions).length>0 && <div className="product-color-list" aria-label="Colores disponibles">{productColors(p.colorOptions).map(c=><span key={c.name}><i style={{backgroundColor:c.hex}} />{c.name}</span>)}</div>}
           <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span><PackageCheck />Sigue tu pedido</span></div>
         </div>
         <div className="product-information">
@@ -40,6 +42,7 @@ export default async function ProductPage({
             key={p.id}
             product={{
               id: p.id,
+              hasColors: productColors(p.colorOptions).length>0,
               name: p.name,
               image: images[0] ?? "",
               price: Number(p.salePrice),

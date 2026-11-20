@@ -1,3 +1,4 @@
+import { productColors } from "@/lib/product-colors";
 import { CartCheckout } from "@/components/cart-checkout";
 import { storeSettings } from "@/lib/catalog";
 import { db } from "@/lib/db";
@@ -19,7 +20,7 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
     const p = await db.product.findFirst({ where: { id: selection.product, status: "PUBLISHED", category: { visible: true } }, include: { variants: { where: { active: true } } } });
     if (!p) notFound();
     const variant = p.variants.find((v) => v.id === selection.variant);
-    if ((selection.variant && !variant) || (p.variants.length && !variant)) notFound();
+    if ((selection.variant && !variant) || (p.variants.length && !variant && !productColors(p.colorOptions).length)) notFound();
     directItems = [{ productId: p.id, variantId: variant?.id, quantity: selection.quantity, name: p.name + (variant ? ` · ${variant.name}` : ""), image: Array.isArray(p.images) ? String(p.images[0] ?? "") : "", price: Number(variant?.salePrice ?? p.salePrice), stock: variant?.stock ?? p.stock }];
   }
   return (

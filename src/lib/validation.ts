@@ -15,6 +15,7 @@ export const cartSchema = z
     z.object({
       productId: z.string().min(1).max(100),
       variantId: z.string().max(100).optional(),
+      unitColors: z.array(z.string().max(50)).max(20).optional(),
       quantity: z.number().int().min(1).max(20),
     }),
   )

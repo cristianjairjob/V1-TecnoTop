@@ -16,7 +16,7 @@ import { checkoutSchema } from "@/lib/validation";
 import { departments, citiesForDepartment } from "@/lib/colombia-locations";
 import { directCheckoutUrl } from "@/lib/direct-checkout";
 type Quote = {
-  lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number; pairBestSeller: boolean; offers: { quantity: number; total: number; available: boolean }[] }[];
+  lines: { productId: string; variantId?: string; quantity: number; lineTotal: number; effectiveTotal: number; pairBestSeller: boolean; colors: { name: string; hex: string }[]; offers: { quantity: number; total: number; available: boolean }[] }[];
   baseSubtotal: number;
   savings: number;
   subtotal: number;
@@ -56,8 +56,9 @@ export function CartCheckout({
     } else cart.setItems(nextItems);
   }
   const serialized = JSON.stringify(
-    items.map(({ productId, variantId, quantity }) => ({
+    items.map(({ productId, variantId, quantity, unitColors }) => ({
       productId,
+      unitColors,
       variantId,
       quantity,
     })),
@@ -204,10 +205,9 @@ export function CartCheckout({
                 </select>
               </label>
               <figure className="span-two checkout-address-guide">
-                <a href="/checkout/address-guide.png" target="_blank" rel="noopener noreferrer" aria-label="Ampliar guía para escribir la dirección">
                   <img src="/checkout/address-guide.png" alt="Cómo enviar la dirección correctamente. Ejemplo: Carrera 3 # 45 - 07. Indica la vía, el cruce y el número de tu casa." width={1672} height={941} />
-                </a>
-                <figcaption>Ejemplo: <strong>Carrera 3 # 45 - 07</strong>. <a href="/checkout/address-guide.png" target="_blank" rel="noopener noreferrer">Ver guía ampliada ↗</a></figcaption>
+
+                <figcaption>Ejemplo: <strong>Carrera 3 # 45 - 07</strong>.</figcaption>
               </figure>
               <label className="span-two">
                 Dirección exacta (con nomenclatura) *
@@ -314,11 +314,12 @@ export function CartCheckout({
             <p className="summary-product"><span>{item.quantity} {item.quantity === 1 ? "unidad" : "unidades"}</span><span>{quoting ? "Actualizando…" : line ? money(line.effectiveTotal) : "Por validar"}</span></p>
             {line && <fieldset className="checkout-offers"><legend>Elige tu promoción</legend>
               {line.offers.map((offer) => <label key={offer.quantity} className={`${item.quantity === offer.quantity ? "selected" : ""} ${offer.quantity === 2 ? "pair" : ""}`}>
-                <input type="radio" name={`checkout-offer-${item.productId}-${item.variantId || "base"}`} checked={item.quantity === offer.quantity} disabled={!offer.available || busy} onChange={() => setItems(items.map((current, n) => n === index ? { ...current, quantity: offer.quantity } : current))} />
+                <input type="radio" name={`checkout-offer-${item.productId}-${item.variantId || "base"}`} checked={item.quantity === offer.quantity} disabled={!offer.available || busy} onChange={() => setItems(items.map((current, n) => n === index ? { ...current, quantity: offer.quantity, unitColors: Array.from({length:offer.quantity},(_,i)=>current.unitColors?.[i]??"") } : current))} />
                 <span><strong>{offer.quantity === 1 ? "Individual · 1 unidad" : offer.quantity === 2 ? "Combo pareja · 2 unidades" : "Combo familiar · 3 unidades"}</strong><small>ENVÍO GRATIS · PAGO CONTRAENTREGA</small>{offer.quantity === 2 && line.pairBestSeller && <em>EL MÁS COMPRADO</em>}</span>
                 <b>{money(offer.total)}</b>
               </label>)}
             </fieldset>}
+            {line && line.colors.length>0 && <fieldset className="checkout-unit-colors"><legend>Elige el color de cada unidad</legend>{Array.from({length:item.quantity},(_,unit)=><label key={unit}>Unidad {unit+1}<select required form="checkout-form" value={item.unitColors?.[unit]??""} onChange={e=>setItems(items.map((current,n)=>n===index?{...current,unitColors:Array.from({length:item.quantity},(_,i)=>i===unit?e.target.value:current.unitColors?.[i]??"")}:current))}><option value="">Selecciona un color</option>{line.colors.map(c=><option key={c.name} value={c.name}>{c.name}</option>)}</select></label>)}</fieldset>}
           </div>;
         })}
         <label>
@@ -341,7 +342,7 @@ export function CartCheckout({
         <dl>
           <div>
             <dt>Subtotal</dt>
-            <dd>{quoting ? "Actualizando…" : quote ? money(quote.baseSubtotal) : "Por validar"}</dd>
+            <dd><del>{quoting ? "Actualizando…" : quote ? money(quote.baseSubtotal) : "Por validar"}</del></dd>
           </div>
           <div>
             <dt>Descuento</dt>

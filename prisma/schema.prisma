@@ -39,6 +39,7 @@ model Product {
   buyersCount Int?
   pairBestSeller Boolean @default(false)
   buyerAvatars Json?
+  colorOptions Json?
   stock Int @default(0)
   status ProductStatus @default(DRAFT)
   brand String?

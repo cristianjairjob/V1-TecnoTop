@@ -1,3 +1,4 @@
+import { productColors } from "./product-colors";
 import { randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -29,7 +30,7 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
       : undefined;
     if (
       (i.variantId && !v) ||
-      (!i.variantId && p.variants.some((v) => v.active))
+      (!i.variantId && p.variants.some((v) => v.active) && !productColors(p.colorOptions).length)
     )
       throw new AppError(400, "Selecciona una variante válida.");
     const price = Number(v?.salePrice ?? p.salePrice);
@@ -37,7 +38,7 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
     if ((v?.stock ?? p.stock) < i.quantity)
       throw new AppError(409, `No hay suficiente inventario de ${p.name}.`);
     const lineTotal = offerTotal(price, i.quantity, p);
-    return { ...i, product: p, variant: v, unitPrice: price, lineTotal };
+    return { ...i, product: p, variant: v, unitPrice: price, lineTotal, originQuantity:i.quantity, originTotal:lineTotal };
   });
   const subtotal = Math.round(lines.reduce((s, i) => s + i.lineTotal, 0) * 100) / 100;
   const promotion = code
@@ -97,6 +98,15 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     return existing;
   }
   const q = await quote(input.items, input.promotionCode);
+  q.lines = q.lines.flatMap(line => {
+    const colors=productColors(line.product.colorOptions);
+    if(!colors.length) { if(line.unitColors?.some(Boolean)) throw new AppError(400,"Este producto no tiene colores configurados."); return [line]; }
+    if(line.unitColors?.length!==line.quantity || line.unitColors.some(c=>!colors.some(v=>v.name===c))) throw new AppError(400,"Elige un color válido para cada unidad.");
+    const selected=line.unitColors.map(name=> {const color=colors.find(c=>c.name===name)!; const variant=line.product.variants.find(v=>v.id===color.variantId && v.active); if(!variant) throw new AppError(409,"Color pendiente de vincular al inventario."); if(Number(variant.salePrice)!==line.unitPrice) throw new AppError(409,"Los colores del combo deben tener el mismo precio individual. Revisa su configuración."); return {color,variant}; });
+    for(const {variant} of selected) if(selected.filter(s=>s.variant.id===variant.id).length>variant.stock) throw new AppError(409,"No hay suficientes unidades del color elegido.");
+    const amounts=allocateUnitPrices(line.effectiveTotal,line.quantity).flatMap(p=>Array(p.quantity).fill(p.unitPrice) as number[]);
+    return selected.map(({color,variant},index)=>({...line,variant,variantId:variant.id,quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
+  });
   if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
     throw new AppError(409, "Este carrito contiene un producto de demostración. Puedes probar el carrito, pero no confirmar un pedido con este producto.");
   if (new Set(q.lines.map((l) => l.product.supplierId)).size !== 1)
@@ -152,7 +162,8 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
                 "La variante cambió. Actualiza tu carrito.",
               );
           }
-          if (offerTotal(l.unitPrice, l.quantity, p) !== l.lineTotal)
+          if (JSON.stringify(p.colorOptions) !== JSON.stringify(l.product.colorOptions)) throw new AppError(409,"Los colores cambiaron. Actualiza tu pedido.");
+          if (offerTotal(l.unitPrice, l.originQuantity, p) !== l.originTotal)
             throw new AppError(409, "El precio del combo cambió. Actualiza tu carrito.");
           const result = l.variantId
             ? await tx.productVariant.updateMany({
@@ -192,7 +203,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
                 variantId: l.variant?.id,
                 dropiId: l.product.dropiId,
                 dropiVariantId: l.variant?.dropiId,
-                name: `${l.product.name}${l.variant ? " · " + l.variant.name : ""}`,
+                name: `${l.product.name}${l.unitColors?.[0] ? " · " + l.unitColors[0] : l.variant ? " · " + l.variant.name : ""}`,
                 quantity: part.quantity,
                 unitPrice: part.unitPrice,
                 supplierPrice:

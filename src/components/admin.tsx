@@ -1,4 +1,5 @@
 "use client";
+import { colorPalette } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -547,6 +548,16 @@ export function Admin() {
                       value={edit.popular}
                       onChange={(v) => update("popular", v)}
                     />
+                    <fieldset><legend>¿Este producto tiene diferentes variantes de color?</legend>
+                      <label><input type="checkbox" checked={rows(edit.colorOptions).length>0} onChange={e=>update("colorOptions",e.target.checked?[{name:"Negro",hex:"#111111",variantId:""}]:[])} /> Sí, tiene colores</label>
+                      {rows(edit.colorOptions).length>0 && <><label>¿Cuántos colores?<input type="number" min={1} max={100} value={rows(edit.colorOptions).length} onChange={e=>{const n=Math.max(1,Math.min(100,Number(e.target.value)||1)); const current=rows(edit.colorOptions); update("colorOptions",Array.from({length:n},(_,i)=>current[i]??{name:"Color "+(i+1),hex:"#808080",variantId:""}));}} /></label>
+                      {rows(edit.colorOptions).map((color,i)=><div className="admin-color-row" key={i}>
+                        <label>Paleta<select value="" onChange={e=>{const c=colorPalette[Number(e.target.value)]; if(c) update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,name:c[0],hex:c[1]}:v));}}><option value="">Elige o personaliza</option>{colorPalette.map(([name],n)=><option key={name} value={n}>{name}</option>)}</select></label>
+                        <label>Nombre<input value={string(color,"name")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,name:e.target.value}:v))} /></label>
+                        <label>Tono<input type="color" value={string(color,"hex")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,hex:e.target.value}:v))} /></label>
+                        <label>Variante de inventario / Dropi<select value={string(color,"variantId")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,variantId:e.target.value}:v))}><option value="">Pendiente de vincular</option>{rows(edit.variants).map(v=><option key={string(v,"id")} value={string(v,"id")}>{string(v,"name")}</option>)}</select></label>
+                      </div>)}<p>Los colores sin variante vinculada no permiten confirmar pedidos reales.</p></>}
+                    </fieldset>
                     {rows(edit.variants).map((v, i) => (
                       <Field
                         key={string(v, "id")}

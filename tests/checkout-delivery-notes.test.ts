@@ -125,8 +125,8 @@ test("el servidor rechaza una ciudad que no pertenece al departamento", () => {
   assert.equal(checkoutSchema.safeParse({ ...valid(), address: "Reclamo en oficina" }).success, true);
 });
 
-for (const fails of [false, true]) {
-  test(`checkout guarda y envía exactamente las mismas notas; fallo Dropi=${fails} (todo simulado)`, async () => {
+for (const [fails, colorful] of [[false,false],[true,false],[false,true],[true,true]]) {
+  test(`checkout guarda y envía exactamente las mismas notas; fallo Dropi=${fails}, colores=${colorful} (todo simulado)`, async () => {
     // These flags exist only in this isolated test process; no real DB or network.
     process.env.CHECKOUT_ENABLED = "true";
     process.env.DROPI_ORDERS_ENABLED = "true";
@@ -138,11 +138,12 @@ for (const fails of [false, true]) {
     let sent: Record<string, unknown> | undefined;
     let requests = 0;
     let creates = 0;
-    const product = { id: "product-test", status: "PUBLISHED", name: "Producto", salePrice: 50000, combo3Price: 100000, supplierPrice: 20000, supplierId: "2", dropiId: "1", stock: 10, variants: [], category: { visible: true }, dropi: { payload: {} } };
+    const product = { id: "product-test", status: "PUBLISHED", name: "Producto", salePrice: 50000, combo3Price: 100000, supplierPrice: 20000, supplierId: "2", dropiId: "1", stock: 10, colorOptions: colorful ? [{name:"Negro",hex:"#111111",variantId:"black"},{name:"Blanco",hex:"#ffffff",variantId:"white"}] : [], variants: colorful ? ["black","white"].map(id=>({id,dropiId:id,name:id,active:true,salePrice:50000,stock:10,supplierPrice:20000})) : [], category: { visible: true }, dropi: { payload: {} } };
     stub(db.siteSetting, "findUnique", async () => ({ value: { policiesApproved: true } }));
     stub(db.product, "findMany", async () => [product]);
     stub(db.product, "findUniqueOrThrow", async () => product);
     stub(db.product, "updateMany", async () => ({ count: 1 }));
+    stub(db.productVariant, "updateMany", async () => ({count:1}));
     stub(db.customer, "create", async ({ data }: { data: object }) => (customer = { id: "customer-test", ...data }));
     stub(db.order, "findUnique", async () => stored ?? null);
     stub(db.order, "create", async ({ data }: { data: Record<string, unknown> & { items: { create: object[] } } }) => {
@@ -160,7 +161,7 @@ for (const fails of [false, true]) {
     stub(db, "$transaction", async (operation: unknown) => typeof operation === "function" ? operation(db) : Promise.all(operation as Promise<unknown>[]));
     mock.method(globalThis, "fetch", async (url: URL | RequestInfo, init?: RequestInit) => {
       const path = String(url);
-      if (path.endsWith("products/v2/1")) return new Response(JSON.stringify({ isSuccess: true, objects: { id: 1, name: "Producto", stock: 10 } }));
+      if (path.endsWith("products/v2/1")) return new Response(JSON.stringify({ isSuccess: true, objects: { id: 1, name: "Producto", stock: 10, variations: colorful ? ["black","white"].map(id=>({id,stock:10})) : [] } }));
       assert.equal(path, "https://api.dropi.co/integrations/orders/myorders");
       assert.equal(init?.method, "POST");
       assert.ok(stored?.deliveryNotes, "Las notas deben persistir antes del POST");
@@ -168,7 +169,15 @@ for (const fails of [false, true]) {
       requests++;
       return fails ? new Response("{}", { status: 401 }) : new Response(JSON.stringify({ isSuccess: true, objects: { id: "mock-order" } }));
     });
-    const input = checkoutSchema.parse({ ...valid(), items: [{ productId: "product-test", quantity: 3 }] });
+    const input = checkoutSchema.parse({ ...valid(), items: [{ productId: "product-test", quantity: 3, ...(colorful?{unitColors:["Negro","Blanco","Negro"]}:{}) }] });
+    if(colorful) {
+      await assert.rejects(checkout({...input,items:[{productId:"product-test",quantity:3,unitColors:["Negro"]}]}),/color válido/);
+      await assert.rejects(checkout({...input,items:[{productId:"product-test",quantity:3,unitColors:["Rojo","Blanco","Negro"]}]}),/color válido/);
+      product.variants[0].stock=1;
+      await assert.rejects(checkout(input),/suficientes unidades/);
+      product.variants[0].stock=10;
+      assert.equal(creates,0);
+    }
     const result = await checkout(input);
     assert.ok(stored && sent);
     assert.equal(sent.notes, stored.deliveryNotes);
@@ -181,6 +190,7 @@ for (const fails of [false, true]) {
     const sentProducts = sent.products as { price: number; quantity: number }[];
     assert.equal(sentProducts.reduce((sum, item) => sum + item.quantity, 0), 3);
     assert.equal(sentProducts.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0), 10000000);
+    if(colorful) assert.deepEqual((sent.products as {variation_id:string}[]).map(p=>p.variation_id),["black","white","black"]);
     assert.equal(requests, 1);
     await checkout(input);
     assert.equal(creates, 1, "El reintento idempotente no crea otro pedido");
