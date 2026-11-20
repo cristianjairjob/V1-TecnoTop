@@ -2175,3 +2175,9 @@ button:focus-visible {
  .purchase-card .product-offers .offer-price { grid-column:3; grid-row:1; }
  .purchase-card .product-offers .offer-free-shipping { font-size:9px; letter-spacing:-.2px; white-space:nowrap; width:max-content; max-width:100%; }
 }
+
+.stock-notice { display:flex; justify-content:center; align-items:center; gap:10px; padding:16px; margin:18px 0 12px; border:1px solid #ff9d32; border-radius:14px; background:linear-gradient(110deg,#ffb64b,#ff8431); color:#592000; font-size:20px; box-shadow:0 5px 18px #ff8b3033; text-align:center; }
+.stock-notice-floating { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:90; display:flex; align-items:center; justify-content:center; gap:8px; max-width:calc(100vw - 32px); width:max-content; padding:12px 20px; background:#bc2034; border:1px solid #ff8694; border-radius:14px; color:white; box-shadow:0 5px 22px #5d0a2860; font-size:17px; pointer-events:none; animation:notice-fade-in .35s ease-out both; }
+.checkout-floating-clock { animation:notice-fade-in .35s ease-out both; }
+@keyframes notice-fade-in { from { opacity:0; } to { opacity:1; } }
+@media(prefers-reduced-motion:reduce) { .stock-notice-floating,.checkout-floating-clock { animation:none; } }

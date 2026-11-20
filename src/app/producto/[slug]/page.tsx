@@ -1,3 +1,4 @@
+import { StockAlert } from "@/components/stock-alert";
 import { productColors } from "@/lib/product-colors";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -31,6 +32,7 @@ export default async function ProductPage({
       <div className="product-detail">
         <div><ProductGallery images={images} name={p.name} stock={p.stock} />
           {productColors(p.colorOptions).length>0 && <div className="product-color-list" aria-label="Colores disponibles">{productColors(p.colorOptions).map(c=><span key={c.name}><i style={{backgroundColor:c.hex}} />{c.name}</span>)}</div>}
+          <StockAlert stock={p.stock} />
           <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span><PackageCheck />Sigue tu pedido</span></div>
         </div>
         <div className="product-information">
