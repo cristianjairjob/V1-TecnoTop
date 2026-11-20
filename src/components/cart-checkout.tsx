@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { LocationCombobox } from "./location-combobox";
 import { isBusinessDay } from "@/lib/business-days";
 import { CheckoutTimer } from "./checkout-timer";
 import { useEffect, useState } from "react";
@@ -191,20 +192,8 @@ export function CartCheckout({
                   maxLength={180}
                 />
               </label>
-              <label>
-                Departamento *
-                <select name="state" autoComplete="address-level1" required value={department} onChange={(event) => { setDepartment(event.target.value); setCity(""); }}>
-                  <option value="">Selecciona tu departamento</option>
-                  {departments.map((item) => <option key={item.code} value={item.name}>{item.name}</option>)}
-                </select>
-              </label>
-              <label>
-                Ciudad / municipio *
-                <select name="city" autoComplete="address-level2" required disabled={!department} value={city} onChange={(event) => setCity(event.target.value)}>
-                  <option value="">{department ? "Selecciona tu ciudad o municipio" : "Primero selecciona un departamento"}</option>
-                  {cities.map((item) => <option key={item.code} value={item.name}>{item.name}</option>)}
-                </select>
-              </label>
+              <LocationCombobox label="Departamento *" name="state" options={departments} value={department} onChange={value => { setDepartment(value); setCity(""); }} placeholder="Escribe tu departamento" />
+              <LocationCombobox key={department} label="Ciudad / municipio *" name="city" options={cities} value={city} onChange={setCity} disabled={!department} placeholder={department ? "Escribe tu ciudad o municipio" : "Primero selecciona un departamento"} />
               <figure className="span-two checkout-address-guide">
                   <img src="/checkout/address-guide.png" alt="Cómo enviar la dirección correctamente. Ejemplo: Carrera 3 # 45 - 07. Indica la vía, el cruce y el número de tu casa." width={1672} height={941} />
 

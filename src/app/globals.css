@@ -2213,3 +2213,11 @@ button:focus-visible {
 .admin-actions { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
 .notification-row { padding:18px 0; border-bottom:1px solid #c9daea; overflow-wrap:anywhere; }
 .notification-row button { margin:6px; }
+
+.location-combobox { position:relative; min-width:0; }
+.location-combobox > input:not([type=hidden]) { width:100%; }
+.location-options { position:absolute; top:100%; left:0; right:0; z-index:30; background:#fff; color:#123451; border:1px solid #70bbed; border-radius:10px; box-shadow:0 8px 24px #052d5126; overflow:hidden; }
+.location-options ul { list-style:none; margin:0; padding:4px; max-height:240px; overflow-y:auto; overscroll-behavior:contain; }
+.location-options li { padding:12px; cursor:pointer; border-radius:7px; overflow-wrap:anywhere; }
+.location-options li[aria-selected=true], .location-options li:hover { background:#e0f2ff; color:#064e93; }
+.location-options p { padding:12px; margin:0; }
