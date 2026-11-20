@@ -2205,3 +2205,7 @@ button:focus-visible {
 .admin-image-previews { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
 .admin-image-previews > div { display:flex; flex-direction:column; align-items:center; gap:6px; }
 .admin-image-previews img { object-fit:contain; background:#fff; border:1px solid #c5d8e8; border-radius:10px; }
+
+.product-colors { margin:20px 0; text-align:center; }
+.product-colors h2 { margin:0 0 12px; color:#0875dc; font-size:clamp(1.1rem,2.5vw,1.4rem); font-weight:800; }
+.product-colors .product-color-list { justify-content:center; margin:0; }

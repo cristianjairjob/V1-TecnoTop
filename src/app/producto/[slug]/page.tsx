@@ -31,7 +31,14 @@ export default async function ProductPage({
       </div>
       <div className="product-detail">
         <div><ProductGallery images={images} name={p.name} stock={p.stock} />
-          {productColors(p.colorOptions).length>0 && <div className="product-color-list" aria-label="Colores disponibles">{productColors(p.colorOptions).map(c=><span key={c.name}><i style={{backgroundColor:c.hex}} />{c.name}</span>)}</div>}
+          {productColors(p.colorOptions).length > 0 && (
+            <section className="product-colors" aria-labelledby="available-colors-title">
+              <h2 id="available-colors-title">Colores disponibles !</h2>
+              <div className="product-color-list">
+                {productColors(p.colorOptions).map(c => <span key={c.name}><i aria-hidden="true" style={{ backgroundColor: c.hex }} />{c.name}</span>)}
+              </div>
+            </section>
+          )}
           <StockAlert stock={p.stock} />
           <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span><PackageCheck />Sigue tu pedido</span></div>
         </div>
