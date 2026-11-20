@@ -6,4 +6,4 @@ Resultado: 32 departamentos y Bogotá D.C.; 1122 registros de municipios, isla y
 
 Cúcuta ya figuraba como SAN JOSÉ DE CÚCUTA (54001), Norte de Santander. Se presenta como CÚCUTA (SAN JOSÉ DE CÚCUTA), sin modificar el valor oficial guardado.
 
-La búsqueda filtra por inicio del nombre o alias y no distingue tildes ni mayúsculas. Cambiar departamento elimina la selección anterior de ciudad. Solo se envían opciones válidas del catálogo; se conserva la validación del servidor.
+La búsqueda filtra por cualquier parte del nombre o alias y no distingue tildes ni mayúsculas. Cambiar departamento elimina la selección anterior de ciudad. Solo se envían opciones válidas del catálogo; se conserva la validación del servidor.

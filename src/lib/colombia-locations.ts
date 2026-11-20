@@ -15,7 +15,7 @@ export function locationLabel(option: LocationOption) {
 }
 export function filterLocations(options: LocationOption[], query: string) {
   const prefix = normalize(query);
-  return options.filter(option => [option.name, ...(aliases[option.code] ?? [])].some(name => normalize(name).startsWith(prefix)))
+  return options.filter(option => [option.name, ...(aliases[option.code] ?? [])].some(name => normalize(name).includes(prefix)))
     .sort((a, b) => locationLabel(a).localeCompare(locationLabel(b), "es"));
 }
 export function citiesForDepartment(name: string) {

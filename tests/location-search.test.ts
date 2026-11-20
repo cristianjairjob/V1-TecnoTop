@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { departments, citiesForDepartment, filterLocations, locationLabel, isColombiaLocation } from "../src/lib/colombia-locations";
-test("departamentos filtran por inicio, sin tildes ni diferencias de mayúsculas", () => {
-  assert.deepEqual(filterLocations(departments, "n").map(d => d.name), ["NARIÑO", "NORTE DE SANTANDER"]);
+test("departamentos buscan en todo el nombre, sin tildes ni diferencias de mayúsculas", () => {
+  assert.deepEqual(filterLocations(departments, "santander").map(d => d.name), ["NORTE DE SANTANDER", "SANTANDER"]);
   assert.deepEqual(filterLocations(departments, "norte").map(d => d.name), ["NORTE DE SANTANDER"]);
   assert.deepEqual(filterLocations(departments, "  narino ").map(d => d.name), ["NARIÑO"]);
   assert.equal(filterLocations(departments, "inventado").length, 0);
