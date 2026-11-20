@@ -25,7 +25,7 @@ export async function dispatchNotification(id: string) {
     const claimed = await db.notificationPart.updateMany({ where: { id: part.id, status: "PENDING" }, data: { status: "SENDING", startedAt: new Date(), attempts: { increment: 1 } } });
     if (!claimed.count) return { sent: false, reason: "IN_PROGRESS" };
     try {
-      const result = await telegram<{ message_id: number }>("sendMessage", { chat_id: target.chatId, text: part.text, protect_content: true, link_preview_options: { is_disabled: true } });
+      const result = await telegram<{ message_id: number }>("sendMessage", { chat_id: target.chatId, text: part.text, protect_content: false, link_preview_options: { is_disabled: true } });
       if (!Number.isInteger(result.message_id)) throw new TelegramError("TELEGRAM_RESULT_UNKNOWN", true);
       await db.notificationPart.update({ where: { id: part.id }, data: { status: "SENT", messageId: String(result.message_id), sentAt: new Date(), lastError: null } });
     } catch (error) {

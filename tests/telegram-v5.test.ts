@@ -94,7 +94,7 @@ function notificationMocks() {
 }
 test("reintento de error explícito envía solo la parte pendiente; doble dispatch no duplica", async () => {
   const { notification, parts } = notificationMocks(); const sent: string[] = []; let fail = true;
-  mock.method(globalThis, "fetch", async (_url: unknown, init: RequestInit) => { const body = JSON.parse(String(init.body)); assert.equal(body.chat_id, target.chatId); sent.push(body.text); if (body.text.includes("2/2") && fail) return new Response(JSON.stringify({ ok: false, error_code: 429 }), { status: 429 }); return new Response(JSON.stringify({ ok: true, result: { message_id: sent.length } })); });
+  mock.method(globalThis, "fetch", async (_url: unknown, init: RequestInit) => { const body = JSON.parse(String(init.body)); assert.equal(body.chat_id, target.chatId); assert.equal(body.protect_content, false); assert.equal(body.parse_mode, undefined); sent.push(body.text); if (body.text.includes("2/2") && fail) return new Response(JSON.stringify({ ok: false, error_code: 429 }), { status: 429 }); return new Response(JSON.stringify({ ok: true, result: { message_id: sent.length } })); });
   assert.equal((await dispatchNotification("n")).sent, false); assert.equal(parts[0].status, "SENT"); assert.equal(parts[1].status, "PENDING");
   fail = false; assert.equal((await dispatchNotification("n")).sent, true); assert.equal(notification.status, "SENT");
   await dispatchNotification("n"); assert.equal(sent.filter(s => s.includes("1/2")).length, 1); assert.equal(sent.length, 3);
