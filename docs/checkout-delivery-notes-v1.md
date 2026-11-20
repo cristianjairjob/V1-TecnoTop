@@ -44,8 +44,8 @@ acepte pedidos reales.
 La migración 202611190002_product_colors añade Product.colorOptions (JSON nullable).
 Admin permite activar colores, indicar cantidad, elegir entre 30 tonos o personalizar
 cualquier nombre/hex y vincular cada opción a una variante existente de inventario/Dropi.
-Los combos de colores requieren el mismo precio individual en sus variantes; el total
-configurado del combo se distribuye en centavos sin cambiar el importe pagado.
+El total configurado del combo se distribuye en centavos sin cambiar el importe pagado.
+Sin precio de combo, se suman los precios de las variantes seleccionadas.
 El servidor bloquea colores inválidos, incompletos, sin vínculo y stock insuficiente.
 Cada OrderItem conserva el nombre del color y su variantId/dropiVariantId.
 No se crean variantes ficticias de Dropi ni se modifican pedidos históricos.

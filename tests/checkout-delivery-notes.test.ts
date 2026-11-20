@@ -242,3 +242,12 @@ test("ahorro suma precio anterior, combo y cupón sin duplicar descuentos", asyn
   assert.equal(result.total, 162000);
   assert.equal(result.baseSubtotal - result.savings, result.total);
 });
+
+test("colores con precios distintos suman sus precios salvo combo configurado", async () => {
+ const product={id:"p",name:"Producto",salePrice:100,stock:10,combo2Price:null as number|null,variants:[{id:"b",active:true,salePrice:100,stock:5},{id:"w",active:true,salePrice:120,stock:5}],colorOptions:[{name:"Negro",hex:"#111111",variantId:"b"},{name:"Blanco",hex:"#ffffff",variantId:"w"}]};
+ stub(db.product,"findMany",async()=>[product]);
+ const items=[{productId:"p",quantity:2,unitColors:["Negro","Blanco"]}];
+ assert.equal((await quote(items)).total,220);
+ product.combo2Price=180;
+ assert.equal((await quote(items)).total,180);
+});

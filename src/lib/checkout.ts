@@ -37,8 +37,16 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
     if (price <= 0) throw new AppError(409, "Producto sin precio confirmado.");
     if ((v?.stock ?? p.stock) < i.quantity)
       throw new AppError(409, `No hay suficiente inventario de ${p.name}.`);
-    const lineTotal = offerTotal(price, i.quantity, p);
-    return { ...i, product: p, variant: v, unitPrice: price, lineTotal, originQuantity:i.quantity, originTotal:lineTotal };
+    const options = productColors(p.colorOptions);
+    const unitPrices = Array.from({length:i.quantity},(_,n)=> {
+      const color=options.find(c=>c.name===i.unitColors?.[n]);
+      const variant=p.variants.find(v=>v.id===color?.variantId && v.active);
+      return variant ? Number(variant.salePrice) : price;
+    });
+    if(unitPrices.some(p=>p<=0)) throw new AppError(409,"Color sin precio confirmado.");
+    const originUnitSubtotal=unitPrices.reduce((sum,p)=>sum+p,0);
+    const lineTotal = offerTotal(originUnitSubtotal/i.quantity, i.quantity, p);
+    return { ...i, product: p, variant: v, unitPrice: price, lineTotal, originQuantity:i.quantity, originTotal:lineTotal, originUnitSubtotal };
   });
   const subtotal = Math.round(lines.reduce((s, i) => s + i.lineTotal, 0) * 100) / 100;
   const promotion = code
@@ -65,7 +73,7 @@ export async function quote(items: z.infer<typeof cartSchema>, code = "") {
       0,
     ) / 100;
   const discount = Math.round((subtotal - total) * 100) / 100;
-  const baseSubtotal = Math.round(lines.reduce((sum, line) => sum + referenceLineTotal(line.unitPrice, line.product.previousPrice, line.quantity, line.lineTotal), 0) * 100) / 100;
+  const baseSubtotal = Math.round(lines.reduce((sum, line) => sum + referenceLineTotal(line.originUnitSubtotal/line.quantity, line.product.previousPrice, line.quantity, line.lineTotal), 0) * 100) / 100;
   const savings = Math.round((baseSubtotal - total) * 100) / 100;
   return {
     lines: discountedLines,
@@ -102,10 +110,10 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     const colors=productColors(line.product.colorOptions);
     if(!colors.length) { if(line.unitColors?.some(Boolean)) throw new AppError(400,"Este producto no tiene colores configurados."); return [line]; }
     if(line.unitColors?.length!==line.quantity || line.unitColors.some(c=>!colors.some(v=>v.name===c))) throw new AppError(400,"Elige un color válido para cada unidad.");
-    const selected=line.unitColors.map(name=> {const color=colors.find(c=>c.name===name)!; const variant=line.product.variants.find(v=>v.id===color.variantId && v.active); if(!variant) throw new AppError(409,"Color pendiente de vincular al inventario."); if(Number(variant.salePrice)!==line.unitPrice) throw new AppError(409,"Los colores del combo deben tener el mismo precio individual. Revisa su configuración."); return {color,variant}; });
+    const selected=line.unitColors.map(name=> {const color=colors.find(c=>c.name===name)!; const variant=line.product.variants.find(v=>v.id===color.variantId && v.active); if(!variant) throw new AppError(409,"Color pendiente de vincular al inventario."); return {color,variant}; });
     for(const {variant} of selected) if(selected.filter(s=>s.variant.id===variant.id).length>variant.stock) throw new AppError(409,"No hay suficientes unidades del color elegido.");
     const amounts=allocateUnitPrices(line.effectiveTotal,line.quantity).flatMap(p=>Array(p.quantity).fill(p.unitPrice) as number[]);
-    return selected.map(({color,variant},index)=>({...line,variant,variantId:variant.id,quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
+    return selected.map(({color,variant},index)=>({...line,variant,variantId:variant.id,unitPrice:Number(variant.salePrice),quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
   });
   if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
     throw new AppError(409, "Este carrito contiene un producto de demostración. Puedes probar el carrito, pero no confirmar un pedido con este producto.");
@@ -163,7 +171,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
               );
           }
           if (JSON.stringify(p.colorOptions) !== JSON.stringify(l.product.colorOptions)) throw new AppError(409,"Los colores cambiaron. Actualiza tu pedido.");
-          if (offerTotal(l.unitPrice, l.originQuantity, p) !== l.originTotal)
+          if (offerTotal(l.originUnitSubtotal/l.originQuantity, l.originQuantity, p) !== l.originTotal)
             throw new AppError(409, "El precio del combo cambió. Actualiza tu carrito.");
           const result = l.variantId
             ? await tx.productVariant.updateMany({
