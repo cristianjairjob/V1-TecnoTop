@@ -1,4 +1,5 @@
 "use client";
+import { ProductImageUploader } from "@/components/product-image-uploader";
 import { colorPalette } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -152,6 +153,7 @@ export function AdminLogin() {
 }
 export function Admin() {
   const router = useRouter();
+  const [uploading, setUploading] = useState(false);
   const [section, setSection] = useState("dashboard");
   const [data, setData] = useState<unknown>(null);
   const [cats, setCats] = useState<Row[]>([]);
@@ -186,6 +188,7 @@ export function Admin() {
     };
   }, [section, page, revision]);
   function choose(id: string) {
+    if (uploading) return;
     setSection(id);
     setData(null);
     setEdit(null);
@@ -213,6 +216,7 @@ export function Admin() {
     setEdit((e) => (e ? { ...e, [key]: value } : e));
   }
   function open(r: Row) {
+    if (uploading) return;
     let value = { ...r };
     if (section === "products" || section === "inventory") {
       value = {
@@ -245,7 +249,7 @@ export function Admin() {
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!edit) return;
+    if (!edit || uploading) return;
     let body = { ...edit };
     if (section === "products")
       body = {
@@ -427,7 +431,7 @@ export function Admin() {
                   : "Importar / sincronizar por ID"}
               </button>
               <button
-                disabled={busy}
+                disabled={busy || uploading}
                 className="button secondary"
                 onClick={async () => {
                   let cursor = 0;
@@ -470,6 +474,7 @@ export function Admin() {
                 <button
                   type="button"
                   className="text-link"
+                  disabled={uploading}
                   onClick={() => setEdit(null)}
                 >
                   Cerrar
@@ -483,6 +488,8 @@ export function Admin() {
                       value={edit.name}
                       onChange={(v) => update("name", v)}
                     />
+                    <label>Stock disponible (unidades)<input type="number" min={0} max={1000000} step={1} required value={String(edit.stock ?? "")} onChange={e => update("stock", e.target.value === "" ? null : Number(e.target.value))} /></label>
+                    {Boolean(edit.dropiId) && <p>El stock manual se guarda en la tienda. La siguiente sincronización de Dropi actualizará estas cantidades con el inventario del proveedor.</p>}
                     <Field
                       label="Marca"
                       value={edit.brand}
@@ -502,7 +509,7 @@ export function Admin() {
                     />
                     <Field label="Combo pareja: total por 2 unidades COP" type="number" value={edit.combo2Price} onChange={(v) => update("combo2Price", v)} />
                     <Field label="Combo familiar: total por 3 unidades COP" type="number" value={edit.combo3Price} onChange={(v) => update("combo3Price", v)} />
-                    <p className="span-two">Introduce el precio TOTAL del combo, no el precio por unidad. En blanco se calcula con el precio individual. Los combos se aplican a exactamente 2 o 3 unidades de la misma variante; otras cantidades usan el precio individual. El precio del combo es común a todas las variantes de este producto.</p>
+                    <p className="span-two">Introduce el precio TOTAL del combo, no el precio por unidad. En blanco se calcula con el precio individual. Los combos se aplican a exactamente 2 o 3 unidades del producto; otras cantidades usan el precio individual. El precio del combo es común a todas las variantes de este producto.</p>
                     <Field label="Compradores verificados de este producto" type="number" value={edit.buyersCount} onChange={(v) => update("buyersCount", v)} />
                     <Field label="Combo pareja: es el más comprado (dato verificado)" type="checkbox" value={edit.pairBestSeller} onChange={(v) => update("pairBestSeller", v)} />
                     <p>
@@ -530,12 +537,7 @@ export function Admin() {
                       value={edit.description}
                       onChange={(v) => update("description", v)}
                     />
-                    <Field
-                      label="Imágenes HTTPS (una URL por línea)"
-                      type="textarea"
-                      value={edit.imageText}
-                      onChange={(v) => update("imageText", v)}
-                    />
+                    <ProductImageUploader key={string(edit, "id")} productId={string(edit, "id")} value={String(edit.imageText ?? "")} onChange={v => update("imageText", v)} onBusy={setUploading} />
                     <Field
                       label="Destacado"
                       type="checkbox"
@@ -558,6 +560,7 @@ export function Admin() {
                         <label>Variante de inventario / Dropi<select value={string(color,"variantId")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,variantId:e.target.value}:v))}><option value="">Pendiente de vincular</option>{rows(edit.variants).map(v=><option key={string(v,"id")} value={string(v,"id")}>{string(v,"name")}</option>)}</select></label>
                       </div>)}<p>Los colores sin variante vinculada no permiten confirmar pedidos reales.</p></>}
                     </fieldset>
+                    {rows(edit.variants).map((v, i) => <label key={"stock-"+string(v,"id")}>Stock variante: {string(v,"name")}<input type="number" min={0} max={1000000} step={1} required value={String(v.stock ?? "")} onChange={e => update("variants", rows(edit.variants).map((row,n) => n === i ? {...row,stock:e.target.value === "" ? null : Number(e.target.value)} : row))} /></label>)}
                     {rows(edit.variants).map((v, i) => (
                       <Field
                         key={string(v, "id")}
@@ -725,7 +728,7 @@ export function Admin() {
                   </select>
                 </div>
               )}
-              <button className="button" disabled={busy}>
+              <button className="button" disabled={busy || uploading}>
                 <Save size={17} /> Guardar cambios
               </button>
             </form>

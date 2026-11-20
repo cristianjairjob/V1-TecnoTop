@@ -1,3 +1,4 @@
+import { stockSchema } from "@/lib/product-stock";
 import { colorOptionsSchema } from "@/lib/product-colors";
 import { NextResponse } from "next/server";
 import { Prisma, OrderStatus } from "@prisma/client";
@@ -143,6 +144,7 @@ export async function POST(req: Request, ctx: Context) {
             id,
             name: z.string().min(2).max(250),
             description: text,
+            stock: stockSchema.optional(),
             salePrice: price,
             previousPrice: price,
             combo2Price: comboPriceSchema,
@@ -160,7 +162,7 @@ export async function POST(req: Request, ctx: Context) {
             images: z
               .array(z.url().refine((s) => s.startsWith("https://")))
               .max(15),
-            variants: z.array(z.object({ id, salePrice: price })).max(200),
+            variants: z.array(z.object({ id, salePrice: price, stock: stockSchema.optional() })).max(200),
           })
           .parse(body);
         const p = await db.product.findUniqueOrThrow({
@@ -190,7 +192,7 @@ export async function POST(req: Request, ctx: Context) {
           for (const v of variants)
             await tx.productVariant.update({
               where: { id: v.id },
-              data: { salePrice: v.salePrice },
+              data: { salePrice: v.salePrice, stock: v.stock },
             });
           return tx.product.update({ where: { id: d.id }, data: update });
         });
