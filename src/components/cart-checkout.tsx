@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { isBusinessDay } from "@/lib/business-days";
 import { CheckoutTimer } from "./checkout-timer";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -240,12 +241,12 @@ export function CartCheckout({
                 <span>Este es el día que tengas disponible para recibir el pedido.</span>
                 <input name="requestedDate" type="date" lang="es-CO"
                   min={minimumDeliveryDate()} max="9999-12-31" value={requestedDate}
-                  onChange={(event) => setRequestedDate(event.target.value)}
+                  onChange={(event) => { const value=event.target.value; if(value && (!isBusinessDay(value) || value < minimumDeliveryDate())) { event.target.setCustomValidity("Elige un día hábil a partir de la fecha mínima, sin sábados, domingos ni festivos."); } else event.target.setCustomValidity(""); setRequestedDate(value); }}
                   aria-describedby="delivery-date-help delivery-date-preview" />
                 <span id="delivery-date-preview" aria-live="polite">
                   {requestedDate ? "Fecha solicitada: " + formatDeliveryDate(requestedDate) : "Formato: DD/MM/YYYY"}
                 </span>
-                <span id="delivery-date-help">Puedes elegir una fecha a partir de {formatDeliveryDate(minimumDeliveryDate())}, dentro de 5 días, debido al tiempo de entrega de la transportadora. La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</span>
+                <span id="delivery-date-help">Puedes elegir una fecha a partir de {formatDeliveryDate(minimumDeliveryDate())}, después de 5 días hábiles (sin sábados, domingos ni festivos), debido al tiempo de entrega de la transportadora. La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</span>
               </label>
             </div>
             <h3>Método de envío y pago</h3>
@@ -341,16 +342,16 @@ export function CartCheckout({
         </label>
         <dl>
           <div>
-            <dt>Subtotal</dt>
-            <dd><del>{quoting ? "Actualizando…" : quote ? money(quote.baseSubtotal) : "Por validar"}</del></dd>
+            <dt>Subtotal antes de descuentos</dt>
+            <dd><del>{quoting ? "Actualizando…" : quote ? money(quote.baseSubtotal + items.reduce((sum,item)=>sum+item.quantity,0)*30000) : "Por validar"}</del></dd>
           </div>
           <div>
-            <dt>Descuento</dt>
-            <dd className="summary-discount">{quoting ? "—" : quote ? money(quote.savings) : "—"}</dd>
+            <dt>Descuento <small>(incluye ahorro de envío)</small></dt>
+            <dd className="summary-discount">{quoting ? "—" : quote ? money(quote.savings + items.reduce((sum,item)=>sum+item.quantity,0)*30000) : "—"}</dd>
           </div>
           <div>
             <dt>Envío</dt>
-            <dd className="free"><del className="shipping-previous">{money(30000)}</del> GRATIS</dd>
+            <dd className="free"><del className="shipping-previous">{money(items.reduce((sum,item)=>sum+item.quantity,0)*30000)}</del> GRATIS</dd>
           </div>
           <div className="summary-total">
             <dt>Total</dt>
@@ -390,9 +391,7 @@ export function CartCheckout({
         <p className="summary-security">
           <LockKeyhole size={14} /> Tus datos se envían de forma cifrada.
         </p>
-        <Link className="text-link" href="/catalogo">
-          Seguir explorando
-        </Link>
+        {!checkout && <Link className="text-link" href="/catalogo">Seguir explorando</Link>}
       </aside>
     </div>
   );

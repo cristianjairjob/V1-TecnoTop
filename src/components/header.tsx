@@ -16,7 +16,8 @@ export function Header({
   categories: { slug: string; name: string }[];
 }) {
   const { items } = useCart();
-  const isCheckout = usePathname() === "/checkout";
+  const pathname = usePathname();
+  const isCheckout = pathname === "/checkout";
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -46,7 +47,7 @@ export function Header({
               <small>TECNOLOGÍA PARA TU DÍA</small>
             </span>
           </Link>
-          {!isCheckout && <form action="/catalogo" className="search">
+          {pathname === "/" && <form action="/catalogo" className="search">
             <Search size={18} />
             <input
               aria-label="Buscar productos"

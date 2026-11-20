@@ -1,3 +1,4 @@
+import { addBusinessDays, isBusinessDay } from "./business-days";
 import { z } from "zod";
 
 export function bogotaToday(now = new Date()): string {
@@ -9,9 +10,7 @@ export function bogotaToday(now = new Date()): string {
 }
 
 export function minimumDeliveryDate(now = new Date()): string {
-  const date = new Date(bogotaToday(now) + "T12:00:00Z");
-  date.setUTCDate(date.getUTCDate() + 5);
-  return date.toISOString().slice(0, 10);
+  return addBusinessDays(bogotaToday(now), 5);
 }
 
 export const isoDateSchema = z.iso.date();
@@ -37,8 +36,8 @@ export const currentDeliverySchema = z.object({
 });
 export const deliverySchema = z.union([currentDeliverySchema, legacyDeliverySchema]);
 export const requestedDeliveryDateSchema = optionalStoredDateSchema.refine(
-  (value) => !value || value >= minimumDeliveryDate(),
-  "Selecciona una fecha con al menos 5 días de anticipación por el tiempo de entrega de la transportadora (hora de Colombia).",
+  (value) => !value || (value >= minimumDeliveryDate() && isBusinessDay(value)),
+  "Selecciona una fecha con al menos 5 días hábiles de anticipación, sin sábados, domingos ni festivos por el tiempo de entrega de la transportadora (hora de Colombia).",
 );
 
 export function buildDeliveryNotes(delivery: z.infer<typeof deliverySchema>, number: string): string {

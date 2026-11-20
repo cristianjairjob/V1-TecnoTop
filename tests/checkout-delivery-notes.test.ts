@@ -216,8 +216,8 @@ test("fecha opcional y límite de cinco días en Colombia", () => {
   const before = new Date(min + "T12:00:00Z"); before.setUTCDate(before.getUTCDate() - 1);
   assert.equal(checkoutSchema.safeParse({ ...valid(), requestedDate: before.toISOString().slice(0, 10) }).success, false);
   assert.equal(checkoutSchema.safeParse({ ...valid(), requestedDate: min }).success, true);
-  assert.equal(minimumDeliveryDate(new Date("2026-12-31T04:59:59Z")), "2027-01-04");
-  assert.equal(minimumDeliveryDate(new Date("2026-12-31T05:00:00Z")), "2027-01-05");
+  assert.equal(minimumDeliveryDate(new Date("2026-12-31T04:59:59Z")), "2027-01-07");
+  assert.equal(minimumDeliveryDate(new Date("2026-12-31T05:00:00Z")), "2027-01-08");
 });
 test("notas opcionales se almacenan y envían sin inventar una fecha", () => {
   const order = fixture();
