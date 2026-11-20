@@ -350,7 +350,7 @@ export function CartCheckout({
           </div>
           <div>
             <dt>Envío</dt>
-            <dd className="free">GRATIS</dd>
+            <dd className="free"><del className="shipping-previous">{money(30000)}</del> GRATIS</dd>
           </div>
           <div className="summary-total">
             <dt>Total</dt>

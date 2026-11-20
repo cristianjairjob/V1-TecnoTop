@@ -2157,3 +2157,5 @@ button:focus-visible {
 
 .product-color-list { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; } .product-color-list span { display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid #c8dfef; border-radius:20px; background:#f1f9ff; } .product-color-list i { display:inline-block; width:22px; height:22px; border:1px solid #a3b8c7; border-radius:50%; }
 .checkout-unit-colors { border:1px solid #c4e1f5; padding:14px; border-radius:12px; margin:12px 0; } .checkout-unit-colors label { display:grid; gap:5px; margin:8px 0; } .admin-color-row { padding:12px; margin:10px 0; border:1px solid #bbd4e5; border-radius:12px; display:grid; gap:8px; }
+
+.shipping-previous { color:#6b7e8c; font-size:12px; font-weight:400; margin-right:8px; }
