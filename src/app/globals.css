@@ -2221,3 +2221,9 @@ button:focus-visible {
 .location-options li { padding:12px; cursor:pointer; border-radius:7px; overflow-wrap:anywhere; }
 .location-options li[aria-selected=true], .location-options li:hover { background:#e0f2ff; color:#064e93; }
 .location-options p { padding:12px; margin:0; }
+
+/* El encabezado permanece en el flujo y no tapa el aviso de stock. */
+.site-header { position: static; }
+.brand img { border: 0; border-radius: 0; background: transparent; object-fit: contain; }
+.stock-notice-floating { top: 12px; }
+.product-benefits { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }

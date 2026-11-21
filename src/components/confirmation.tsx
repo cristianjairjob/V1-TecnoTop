@@ -22,12 +22,11 @@ export function Confirmation() {
           <p>Tu número TecnoTop es</p>
           <strong className="order-number">{order.number}</strong>
           <p>
-            Recibido para validación. Consulta el seguimiento para ver los
-            avances reales.
+            Recibido para validación. Te contactaremos con las novedades de tu pedido.
           </p>
         </>
       ) : (
-        <p>Ingresa tu número de pedido y celular para consultar su estado.</p>
+        <p>Contáctanos e indica tu número de pedido para consultar su estado.</p>
       )}
       <Link href="/seguimiento" className="button">
         Seguir mi pedido

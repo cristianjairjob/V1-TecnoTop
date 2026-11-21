@@ -1,3 +1,4 @@
+import { defaultVisibility, visibilitySchema } from "@/lib/storefront-visibility";
 import { stockSchema } from "@/lib/product-stock";
 import { randomUUID } from "node:crypto";
 import { colorOptionsSchema } from "@/lib/product-colors";
@@ -95,8 +96,10 @@ export async function GET(req: Request, ctx: Context) {
           orderBy: { createdAt: "desc" },
         });
         break;
-      case "settings":
-        data = await db.siteSetting.findMany({ where: { key: { in: ["store", "home"] } } });
+      case "settings": {
+        const saved = await db.siteSetting.findMany({ where: { key: { in: ["store", "home", "visibility"] } } });
+        data = saved.some(s => s.key === "visibility") ? saved : [...saved, {key:"visibility",value:defaultVisibility}];
+        }
         break;
       default:
         throw new AppError(404, "Sección no encontrada.");
@@ -310,10 +313,10 @@ export async function POST(req: Request, ctx: Context) {
       }
       case "settings": {
         const d = z
-          .object({ key: z.enum(["home", "store"]), value: z.unknown() })
+          .object({ key: z.enum(["home", "store", "visibility"]), value: z.unknown() })
           .parse(body);
         const value =
-          d.key === "home"
+          d.key === "visibility" ? visibilitySchema.parse(d.value) : d.key === "home"
             ? z
                 .array(
                   z.object({

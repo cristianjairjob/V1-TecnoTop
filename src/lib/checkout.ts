@@ -107,10 +107,10 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     const colors=productColors(line.product.colorOptions);
     if(!colors.length) { if(line.unitColors?.some(Boolean)) throw new AppError(400,"Este producto no tiene colores configurados."); return [line]; }
     if(line.unitColors?.length!==line.quantity || line.unitColors.some(c=>!colors.some(v=>v.name===c))) throw new AppError(400,"Elige un color válido para cada unidad.");
-    const selected=line.unitColors.map(name=> {const color=colors.find(c=>c.name===name)!; const variant=line.product.variants.find(v=>v.id===color.variantId && v.active); if(!variant) throw new AppError(409,"Color pendiente de vincular al inventario."); return {color,variant}; });
-    for(const {variant} of selected) if(selected.filter(s=>s.variant.id===variant.id).length>variant.stock) throw new AppError(409,"No hay suficientes unidades del color elegido.");
+    const selected=line.unitColors.map(name=> {const color=colors.find(c=>c.name===name)!; const variant=line.product.variants.find(v=>v.id===color.variantId && v.active); if(color.variantId && !variant) throw new AppError(409,"La variante cambió. Actualiza tu pedido."); return {color,variant}; });
+    for(const {variant} of selected) if(variant && selected.filter(s=>s.variant?.id===variant.id).length>variant.stock) throw new AppError(409,"No hay suficientes unidades del color elegido.");
     const amounts=allocateUnitPrices(line.effectiveTotal,line.quantity).flatMap(p=>Array(p.quantity).fill(p.unitPrice) as number[]);
-    return selected.map(({color,variant},index)=>({...line,variant,variantId:variant.id,unitPrice:Number(variant.salePrice),quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
+    return selected.map(({color,variant},index)=>({...line,variant,variantId:variant?.id,unitPrice:Number(variant?.salePrice ?? line.product.salePrice),quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
   });
   if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
     throw new AppError(409, "Este es un producto de demostración. No permite confirmar pedidos.");

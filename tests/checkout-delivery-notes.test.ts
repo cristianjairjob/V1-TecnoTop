@@ -130,14 +130,15 @@ function readySettings({where}:{where:{key:string}}) {
  if(where.key === "telegram-binding") return {value:{chatId:"123456",adminId:"admin",linkedAt:"2026-01-01",testSentAt:"2026-01-01",receiptConfirmed:true}};
  return {value:true};
 }
-for (const colorful of [false,true]) {
- test(`checkout local guarda pedido, colores y outbox sin usar Dropi; colores=${colorful}`, async()=>{
+for (const mode of ["plain","mapped","shared"] as const) {
+ const colorful = mode !== "plain";
+ test(`checkout local guarda pedido, colores y outbox sin usar Dropi; colores=${mode}`, async()=>{
   process.env.CHECKOUT_ENABLED="true";process.env.TELEGRAM_NOTIFICATIONS_ENABLED="true";process.env.DATABASE_URL="mysql://mock:mock@localhost/mock";
-  let stored: StoredOrder | undefined;let customer:unknown;let creates=0;let queued=0;
-  const product={id:"product-test",status:"PUBLISHED",name:"Producto local",salePrice:50000,combo3Price:100000,supplierPrice:0,supplierId:null,dropiId:null,stock:10,colorOptions:colorful?[{name:"Negro",hex:"#111111",variantId:"black"},{name:"Blanco",hex:"#ffffff",variantId:"white"}]:[],variants:colorful?["black","white"].map(id=>({id,name:id,active:true,salePrice:50000,stock:10,supplierPrice:0})):[],category:{visible:true}};
+  let stored: StoredOrder | undefined;let customer:unknown;let creates=0;let queued=0;let decremented=0;let variantDecremented=0;
+  const product={id:"product-test",status:"PUBLISHED",name:"Producto local",salePrice:50000,combo3Price:100000,supplierPrice:0,supplierId:null,dropiId:null,stock:10,colorOptions:colorful?[{name:"Negro",hex:"#111111",variantId:mode === "mapped" ? "black" : ""},{name:"Blanco",hex:"#ffffff",variantId:mode === "mapped" ? "white" : ""}]:[],variants:mode === "mapped"?["black","white"].map(id=>({id,name:id,active:true,salePrice:50000,stock:10,supplierPrice:0})):[],category:{visible:true}};
   stub(db.siteSetting,"findUnique",async (args:Parameters<typeof readySettings>[0])=>readySettings(args));
   stub(db.product,"findMany",async()=>[product]);stub(db.product,"findUniqueOrThrow",async()=>product);
-  stub(db.product,"updateMany",async()=>({count:1}));stub(db.productVariant,"updateMany",async()=>({count:1}));
+  stub(db.product,"updateMany",async({data}:{data:{stock:{decrement:number}}})=>{decremented+=data.stock.decrement;return {count:1};});stub(db.productVariant,"updateMany",async({data}:{data:{stock:{decrement:number}}})=>{variantDecremented+=data.stock.decrement;return {count:1};});
   stub(db.customer,"create",async({data}:{data:object})=>(customer={id:"customer",...data}));
   stub(db.order,"findUnique",async()=>stored??null);
   stub(db.order,"create",async({data}:{data:Record<string,unknown>&{items:{create:object[]}}})=>{creates++;stored={...data,id:"order-test",customer,items:data.items.create,createdAt:new Date()} as unknown as StoredOrder;return stored;});
@@ -152,6 +153,8 @@ for (const colorful of [false,true]) {
   assert.equal(stored.customer.phone,input.phone);assert.equal(stored.customer.phoneNormalized,"3041234567");
   assert.equal(stored.items.reduce((n,i)=>n+Math.round(Number(i.unitPrice)*100)*i.quantity,0),10000000);
   assert.equal(queued,1);assert.equal(stored.paymentMethod,"CONTRAENTREGA");
+  assert.equal(decremented,3);assert.equal(variantDecremented,mode === "mapped" ? 3 : 0);
+  if(mode === "shared") assert.ok(stored.items.every(i=>!i.variantId));
   if(colorful) assert.deepEqual(stored.items.map(i=>(i.snapshot as {colors:string[]}).colors[0]),["Negro","Blanco","Negro"]);
   await checkout(input);assert.equal(creates,1);assert.equal(queued,1);
   await assert.rejects(checkout({...input,additionalNotes:"Otra nota"}),/ya fue utilizada/);

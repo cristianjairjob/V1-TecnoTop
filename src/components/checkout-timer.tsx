@@ -25,7 +25,7 @@ export function CheckoutTimer({ floatingEnabled = true }: { floatingEnabled?: bo
     let observer: IntersectionObserver;
     const observe = () => {
       observer?.disconnect();
-      const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height ?? 0;
+      const headerHeight = 0;
       observer = new IntersectionObserver(([entry]) => {
         setFloating(!entry.isIntersecting && entry.boundingClientRect.bottom <= headerHeight);
       }, { rootMargin: "-" + headerHeight + "px 0px 0px 0px", threshold: 0 });

@@ -40,7 +40,7 @@ export default async function ProductPage({
             </section>
           )}
           <StockAlert stock={p.stock} />
-          <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span><PackageCheck />Sigue tu pedido</span></div>
+          <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span className="public-tracking"><PackageCheck />Sigue tu pedido</span></div>
         </div>
         <div className="product-information">
           <span className="eyebrow">{p.brand || p.category?.name}</span>
@@ -78,7 +78,7 @@ export default async function ProductPage({
             <div className="purchase-arrival"><h2><Truck size={20} /> ¿Cuándo me llega?</h2><dl className="delivery-estimates"><div><dt>Ciudades principales</dt><dd>2 a 3 días</dd></div><div><dt>Ciudades intermedias</dt><dd>3 a 5 días</dd></div><div><dt>Corregimientos y lugares lejanos</dt><dd>5 a 7 días</dd></div></dl><small>Días hábiles, según la operación de la transportadora.</small><small>Plazos estimados. La fecha solicitada está sujeta a disponibilidad y confirmación de la transportadora.</small></div>
             <Link className="purchase-policy-link" href="/politicas"><ShieldCheck size={19} /> Consulta garantías, cambios y devoluciones →</Link>
           </div>
-          <h2>Conoce los detalles</h2>
+          <h2 className="product-description-title">Conoce los detalles</h2>
           <p className="product-description">
             {p.description.replace(/<[^>]*>/g, "")}
           </p>

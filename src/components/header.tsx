@@ -37,7 +37,7 @@ export function Header({
         <div className={`header-main wrap ${isCheckout ? "checkout-header" : ""}`}>
           <Link href="/" className="brand" aria-label="TecnoTop, inicio">
             <img
-              src="/brand/tecnotop-original.png"
+              src="/brand/tecnotop-logo-v2.png"
               alt="Logo oficial TecnoTop"
               width="52"
               height="52"

@@ -1,5 +1,6 @@
 "use client";
 import { ProductImageUploader } from "@/components/product-image-uploader";
+import { visibilityControls, parseVisibility } from "@/lib/storefront-visibility";
 import { colorPalette } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +11,6 @@ import {
   Folder,
   ShoppingBag,
   Users,
-  RefreshCw,
   Boxes,
   Truck,
   Tag,
@@ -34,7 +34,6 @@ const navigation = [
   { id: "collections", name: "Colecciones", Icon: Folder },
   { id: "orders", name: "Pedidos", Icon: ShoppingBag },
   { id: "customers", name: "Clientes", Icon: Users },
-  { id: "dropi", name: "Dropi", Icon: RefreshCw },
   { id: "inventory", name: "Inventario", Icon: Boxes },
   { id: "tracking", name: "Seguimiento", Icon: Truck },
   { id: "promotions", name: "Promociones", Icon: Tag },
@@ -561,8 +560,8 @@ export function Admin() {
                         <label>Paleta<select value="" onChange={e=>{const c=colorPalette[Number(e.target.value)]; if(c) update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,name:c[0],hex:c[1]}:v));}}><option value="">Elige o personaliza</option>{colorPalette.map(([name],n)=><option key={name} value={n}>{name}</option>)}</select></label>
                         <label>Nombre<input value={string(color,"name")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,name:e.target.value}:v))} /></label>
                         <label>Tono<input type="color" value={string(color,"hex")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,hex:e.target.value}:v))} /></label>
-                        <label>Variante de inventario / Dropi<select value={string(color,"variantId")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,variantId:e.target.value}:v))}><option value="">Pendiente de vincular</option>{rows(edit.variants).map(v=><option key={string(v,"id")} value={string(v,"id")}>{string(v,"name")}</option>)}</select></label>
-                      </div>)}<p>Los colores sin variante vinculada no permiten confirmar pedidos reales.</p></>}
+                        <label>Inventario local (opcional)<select value={string(color,"variantId")} onChange={e=>update("colorOptions",rows(edit.colorOptions).map((v,n)=>n===i?{...v,variantId:e.target.value}:v))}><option value="">Usar stock y precio del producto</option>{rows(edit.variants).map(v=><option key={string(v,"id")} value={string(v,"id")}>{string(v,"name")}</option>)}</select></label>
+                      </div>)}<p>Cada color usa el stock y precio del producto. Puedes asociar una variante local si necesitas inventario o precio independiente.</p></>}
                     </fieldset>
                     {rows(edit.variants).map((v, i) => <label key={"stock-"+string(v,"id")}>Stock variante: {string(v,"name")}<input type="number" min={0} max={1000000} step={1} required value={String(v.stock ?? "")} onChange={e => update("variants", rows(edit.variants).map((row,n) => n === i ? {...row,stock:e.target.value === "" ? null : Number(e.target.value)} : row))} /></label>)}
                     {rows(edit.variants).map((v, i) => (
@@ -1043,7 +1042,7 @@ function SettingsEditor({
 }) {
   const [value, setValue] = useState(setting.value);
   const home = setting.key === "home";
-  if (!["home", "store"].includes(String(setting.key))) return null;
+  if (!["home", "store", "visibility"].includes(String(setting.key))) return null;
   return (
     <form
       className="panel editor"
@@ -1052,8 +1051,8 @@ function SettingsEditor({
         void onSave(value);
       }}
     >
-      <h2>{home ? "Secciones de inicio" : "Contacto y políticas"}</h2>
-      {home ? (
+      <h2>{setting.key === "visibility" ? "Visibilidad de la tienda" : home ? "Secciones de inicio" : "Contacto y políticas"}</h2>
+      {setting.key === "visibility" ? <><p>Activa los bloques y botones que quieres mostrar. Los cambios se aplican al guardar y recargar la tienda. Los campos obligatorios, totales, consentimiento y controles del administrador se conservan.</p><div className="form-grid">{visibilityControls.map(c => <Field key={c.key} label={c.label} type="checkbox" value={parseVisibility(value)[c.key]} onChange={v => setValue({...parseVisibility(value),[c.key]:v})} />)}</div></> : home ? (
         rows(value).map((s, i) => (
           <div className="home-editor-row" key={string(s, "id")}>
             <div className="section-heading">
