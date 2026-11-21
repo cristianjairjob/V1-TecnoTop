@@ -80,7 +80,7 @@ export default async function ProductPage({
           </div>
           <h2 className="product-description-title">Conoce los detalles</h2>
           <p className="product-description">
-            {p.description.replace(/<[^>]*>/g, "")}
+            {p.description.replace(/<[^>]*>/g, "").replace("No está disponible para la venta ni corresponde a un producto de Dropi.", "Permite confirmar pedidos de prueba para verificar el formulario y las notificaciones. No se despacha.")}
           </p>
         </div>
       </div>

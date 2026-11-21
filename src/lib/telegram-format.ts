@@ -30,7 +30,7 @@ export function orderTelegramMessage(order: {
   const a = object(order.address), delivery = object(a.delivery), buyer = object(a.buyer), pricing = object(order.pricingSnapshot);
   const date = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }).format(order.createdAt);
   const phone = String(buyer.phone ?? order.customer.phone);
-  const lines = ["🛒 NUEVA COMPRA — TECNOTOP", "", "PEDIDO:", order.number, date, "", "DATOS DEL CLIENTE:",
+  const lines = [pricing.isTest === true ? "🧪 PEDIDO DE PRUEBA — TECNOTOP · NO DESPACHAR" : "🛒 NUEVA COMPRA — TECNOTOP", "", "PEDIDO:", order.number, date, "", "DATOS DEL CLIENTE:",
     `Nombres: ${buyer.firstName ?? order.customer.firstName ?? order.customer.name}`, `Apellidos: ${buyer.lastName ?? order.customer.lastName ?? "Sin registrar"}`,
     `Celular: ${phone}`, `Correo: ${buyer.email || order.customer.email || "NO ESPECIFICADO"}`, "", "DIRECCIÓN:",
     `Departamento: ${a.state}`, `Ciudad: ${a.city}`, `Dirección: ${a.address}`, `Información para transportadora: ${a.complement || "SIN INFORMACIÓN"}`,

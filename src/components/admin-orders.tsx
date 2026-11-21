@@ -5,7 +5,7 @@ import { money } from "@/lib/catalog-format";
 import { formatDeliveryDate } from "@/lib/delivery";
 import { commercialStatuses } from "@/lib/order-management";
 import { whatsappUrl } from "@/lib/whatsapp";
-type Order = { id: string; number: string; createdAt: string; status: string; customer: { name: string; phone: string; email: string }; address: { state: string; city: string; address: string; complement?: string; buyer?: { firstName: string; lastName: string }; delivery?: { additionalNotes?: string; requestedDate?: string; establishment?: string; reference?: string } }; items: { id: string; name: string; quantity: number; unitPrice: string; snapshot: { variant?: string; colors?: string[]; offer?: string } }[]; subtotal: string; discount: string; shipping: string; total: string; pricingSnapshot?: { baseSubtotal: number; savings: number }; promotionCode: string | null; paymentMethod: string; events: { id: string; status: string; detail: string; createdAt: string }[] };
+type Order = { id: string; number: string; createdAt: string; status: string; customer: { name: string; phone: string; email: string }; address: { state: string; city: string; address: string; complement?: string; buyer?: { firstName: string; lastName: string }; delivery?: { additionalNotes?: string; requestedDate?: string; establishment?: string; reference?: string } }; items: { id: string; name: string; quantity: number; unitPrice: string; snapshot: { variant?: string; colors?: string[]; offer?: string } }[]; subtotal: string; discount: string; shipping: string; total: string; pricingSnapshot?: { isTest?: boolean; baseSubtotal: number; savings: number }; promotionCode: string | null; paymentMethod: string; events: { id: string; status: string; detail: string; createdAt: string }[] };
 type Audit = { id: string; action: string; createdAt: string };
 const date = (s: string) => new Date(s).toLocaleString("es-CO", { timeZone: "America/Bogota" });
 export function AdminOrders({ orderId }: { orderId?: string }) {
@@ -38,12 +38,12 @@ export function AdminOrders({ orderId }: { orderId?: string }) {
         <label>Orden por fecha<select value={sort} onChange={e => { setSort(e.target.value); setPage(0); }}><option value="desc">Más recientes</option><option value="asc">Más antiguos</option></select></label>
       </div>
       <div className="table-wrap"><table><thead><tr>{["Pedido / fecha", "Cliente / teléfono", "Ciudad", "Productos / cantidades", "Total", "Pago", "Estado"].map(t => <th key={t}>{t}</th>)}</tr></thead><tbody>{orders.map(o => <tr key={o.id}>
-        <td><Link href={`/admin/pedidos/${o.id}`}>{o.number}</Link><br />{date(o.createdAt)}</td><td>{o.customer.name}<br />{o.customer.phone}</td><td>{o.address.city}</td><td>{o.items.map(i => <div key={i.id}>{i.quantity} × {i.name}</div>)}</td><td>{money(Number(o.total))}</td><td>{o.paymentMethod}</td><td>{o.status}</td>
+        <td><Link href={`/admin/pedidos/${o.id}`}>{o.number}</Link>{o.pricingSnapshot?.isTest && <strong> · PRUEBA</strong>}<br />{date(o.createdAt)}</td><td>{o.customer.name}<br />{o.customer.phone}</td><td>{o.address.city}</td><td>{o.items.map(i => <div key={i.id}>{i.quantity} × {i.name}</div>)}</td><td>{money(Number(o.total))}</td><td>{o.paymentMethod}</td><td>{o.status}</td>
       </tr>)}</tbody></table></div>
       {!loading && !orders.length && <p>No hay pedidos con estos filtros.</p>}
       <div className="pagination"><button disabled={!page} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page + 1}</span><button disabled={orders.length < 30} onClick={() => setPage(page + 1)}>Siguiente</button></div>
     </> : order ? <>
-      <section className="panel"><h2>{order.number}</h2><p>{date(order.createdAt)} · {order.status} · {order.paymentMethod}</p>
+      <section className="panel"><h2>{order.number}</h2>{order.pricingSnapshot?.isTest && <p role="status"><strong>PRUEBA · Producto de demostración. No despachar.</strong></p>}<p>{date(order.createdAt)} · {order.status} · {order.paymentMethod}</p>
         <h3>Comprador</h3><p>{order.address.buyer ? `${order.address.buyer.firstName} ${order.address.buyer.lastName}` : order.customer.name}<br />{order.customer.phone}<br />{order.customer.email || "Sin correo"}</p>
         <button onClick={async () => { try { await navigator.clipboard.writeText(order.customer.phone); setError("Teléfono copiado."); } catch { setError("Selecciona el teléfono para copiarlo."); } }}>Copiar teléfono</button>{whatsappUrl(order.customer.phone) && <a className="button" href={whatsappUrl(order.customer.phone)!} target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>}
         <h3>Entrega</h3><p>{order.address.state} · {order.address.city}<br />{order.address.address}<br />{order.address.complement}</p>

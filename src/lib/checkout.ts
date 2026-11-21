@@ -112,8 +112,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
     const amounts=allocateUnitPrices(line.effectiveTotal,line.quantity).flatMap(p=>Array(p.quantity).fill(p.unitPrice) as number[]);
     return selected.map(({color,variant},index)=>({...line,variant,variantId:variant?.id,unitPrice:Number(variant?.salePrice ?? line.product.salePrice),quantity:1,unitColors:[color.name],effectiveTotal:amounts[index]}));
   });
-  if (q.lines.some((line) => line.product.slug === "auriculares-demo-tecnotop"))
-    throw new AppError(409, "Este es un producto de demostración. No permite confirmar pedidos.");
+  const isTest = q.lines.some(line => line.product.slug === "auriculares-demo-tecnotop");
   let order;
   try {
     order = await db.$transaction(
@@ -166,7 +165,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
               "El inventario cambió. Actualiza tu pedido.",
             );
         }
-        const number = `TT-${randomBytes(6).toString("hex").toUpperCase()}`;
+        const number = `TT-${isTest ? "PRUEBA-" : ""}${randomBytes(6).toString("hex").toUpperCase()}`;
         const details = createOrderDetails(input, number);
         const customer = await tx.customer.create({ data: details.customer });
         const saved = await tx.order.create({
@@ -184,7 +183,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
             promotionCode: q.promotion?.code,
             privacyVersion: "v5-telegram",
             paymentMethod: "CONTRAENTREGA",
-            pricingSnapshot: { baseSubtotal: q.baseSubtotal + input.items.reduce((n,i)=>n+i.quantity,0)*30000, savings: q.savings + input.items.reduce((n,i)=>n+i.quantity,0)*30000, productBaseSubtotal:q.baseSubtotal, productSavings:q.savings, shippingSavings:input.items.reduce((n,i)=>n+i.quantity,0)*30000 },
+            pricingSnapshot: { isTest, baseSubtotal: q.baseSubtotal + input.items.reduce((n,i)=>n+i.quantity,0)*30000, savings: q.savings + input.items.reduce((n,i)=>n+i.quantity,0)*30000, productBaseSubtotal:q.baseSubtotal, productSavings:q.savings, shippingSavings:input.items.reduce((n,i)=>n+i.quantity,0)*30000 },
             items: {
               create: q.lines.flatMap((l) => allocateUnitPrices(l.effectiveTotal, l.quantity).map((part) => ({
                 productId: l.product.id,
@@ -203,7 +202,7 @@ export async function checkout(input: z.infer<typeof checkoutSchema>) {
             events: {
               create: {
                 status: "PENDIENTE",
-                detail: "Pedido recibido en TecnoTop.",
+                detail: isTest ? "PRUEBA: pedido de demostración recibido. No despachar." : "Pedido recibido en TecnoTop.",
                 source: "TECNOTOP",
               },
             },
