@@ -4,7 +4,7 @@ import { visibilityControls, parseVisibility } from "@/lib/storefront-visibility
 import { ProductPageEditor } from "@/components/product-page-editor";
 import { productPageContent, type ProductPageContent } from "@/lib/product-page-content";
 import { productHighlights } from "@/lib/product-presentation";
-import { colorPalette } from "@/lib/product-colors";
+import { colorPalette, productColors } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -226,6 +226,7 @@ export function Admin() {
         ...r,
         highlights: productHighlights(r.highlights),
         pageContent: productPageContent(r.pageContent),
+        colorOptions: productColors(r.colorOptions),
         salePrice: r.salePrice === null ? null : Number(r.salePrice),
         combo2Price: r.combo2Price == null ? null : Number(r.combo2Price),
         combo3Price: r.combo3Price == null ? null : Number(r.combo3Price),

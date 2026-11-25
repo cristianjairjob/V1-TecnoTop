@@ -174,7 +174,7 @@ export async function POST(req: Request, ctx: Context) {
             combo3Price: comboPriceSchema,
             buyersCount: z.number().int().min(0).max(2147483647).nullable().optional(),
             pairBestSeller: z.boolean().optional(),
-            colorOptions: colorOptionsSchema.optional(),
+            colorOptions: z.preprocess(value => value === null ? [] : value, colorOptionsSchema.optional()),
             buyerAvatars: z.array(z.url().refine((s) => s.startsWith("https://"))).max(3).optional(),
             categoryId: id.nullable(),
             brand: z.string().max(100).nullable(),
