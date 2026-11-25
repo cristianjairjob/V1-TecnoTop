@@ -1,6 +1,7 @@
 "use client";
 import { ProductImageUploader } from "@/components/product-image-uploader";
 import { visibilityControls, parseVisibility } from "@/lib/storefront-visibility";
+import { productHighlights } from "@/lib/product-presentation";
 import { colorPalette } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -221,6 +222,7 @@ export function Admin() {
     if (section === "products" || section === "inventory") {
       value = {
         ...r,
+        highlights: productHighlights(r.highlights),
         salePrice: r.salePrice === null ? null : Number(r.salePrice),
         combo2Price: r.combo2Price == null ? null : Number(r.combo2Price),
         combo3Price: r.combo3Price == null ? null : Number(r.combo3Price),
@@ -490,8 +492,10 @@ export function Admin() {
                       value={edit.name}
                       onChange={(v) => update("name", v)}
                     />
-                    <label>Stock disponible (unidades)<input type="number" min={0} max={1000000} step={1} required value={String(edit.stock ?? "")} onChange={e => update("stock", e.target.value === "" ? null : Number(e.target.value))} /></label>
-                    {Boolean(edit.dropiId) && <p>El stock se gestiona localmente. La integración externa está pausada.</p>}
+                    <label>Stock real (unidades disponibles para comprar)<input type="number" min={0} max={1000000} step={1} required value={String(edit.stock ?? "")} onChange={e => update("stock", e.target.value === "" ? null : Number(e.target.value))} /></label>
+                    <label>Stock que se muestra en la página del producto<input type="number" min={0} max={1000000} step={1} placeholder="Sin aviso de stock" value={String(edit.displayStock ?? "")} onChange={e => update("displayStock", e.target.value === "" ? null : Number(e.target.value))} /></label>
+                    <p>El stock real se descuenta al comprar. El stock mostrado se edita por separado y no cambia con las compras. Déjalo vacío o en 0 para ocultar el aviso.</p>
+                    <fieldset className="span-two"><legend>Frases destacadas de este producto</legend>{productHighlights(edit.highlights).map((line,i)=><label key={i}>Frase {i+1}<input maxLength={200} value={line} onChange={e=>update("highlights",productHighlights(edit.highlights).map((value,n)=>n===i?e.target.value:value))} /></label>)}<p>Puedes dejar una frase vacía para ocultarla.</p></fieldset>
                     <Field
                       label="Marca"
                       value={edit.brand}

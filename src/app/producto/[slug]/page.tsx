@@ -1,3 +1,4 @@
+import { productHighlights } from "@/lib/product-presentation";
 import { StockAlert } from "@/components/stock-alert";
 import { productColors } from "@/lib/product-colors";
 import { notFound } from "next/navigation";
@@ -39,14 +40,14 @@ export default async function ProductPage({
               </div>
             </section>
           )}
-          <StockAlert stock={p.stock} />
+          <StockAlert stock={p.displayStock ?? 0} />
           <div className="product-benefits"><span><Truck />Envío gratuito</span><span><ShieldCheck />Pago al recibir</span><span className="public-tracking"><PackageCheck />Sigue tu pedido</span></div>
         </div>
         <div className="product-information">
           <span className="eyebrow">{p.brand || p.category?.name}</span>
           <h1>{p.name}</h1>
           {Number(p.buyersCount) > 0 && <div className="product-social-proof"><div className="buyer-avatars" aria-hidden="true">{buyerAvatars.map((url, i) => <img key={`${url}-${i}`} src={url} alt="" width={42} height={42} loading="lazy" />)}</div><BadgeCheck size={23} /><span><strong>{Number(p.buyersCount).toLocaleString("es-CO")}</strong> personas ya compraron este producto</span></div>}
-          <ul className="product-highlights"><li><Check /> Envío gratis a todo Colombia</li><li><Check /> Compra con pago contraentrega</li><li><Check /> Elige tu variante y cantidad disponible</li></ul>
+          <ul className="product-highlights">{productHighlights(p.highlights).map(line=>line.trim()).filter(Boolean).map((line,i)=><li key={i}><Check /> {line}</li>)}</ul>
           <AddToCart
             key={p.id}
             product={{

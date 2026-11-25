@@ -1,3 +1,4 @@
+import { highlightsSchema, displayStockSchema } from "@/lib/product-presentation";
 import { defaultVisibility, visibilitySchema } from "@/lib/storefront-visibility";
 import { stockSchema } from "@/lib/product-stock";
 import { randomUUID } from "node:crypto";
@@ -163,6 +164,8 @@ export async function POST(req: Request, ctx: Context) {
             name: z.string().min(2).max(250),
             description: text,
             stock: stockSchema.optional(),
+            displayStock: displayStockSchema.optional(),
+            highlights: highlightsSchema.optional(),
             salePrice: price,
             previousPrice: price,
             combo2Price: comboPriceSchema,
