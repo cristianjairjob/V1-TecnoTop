@@ -45,6 +45,7 @@ model Product {
   buyerAvatars Json?
   colorOptions Json?
   highlights Json?
+  pageContent Json?
   displayStock Int?
   stock Int @default(0)
   status ProductStatus @default(DRAFT)
@@ -308,4 +309,13 @@ model TelegramLinkCode {
  expiresAt DateTime
  usedAt DateTime?
  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id String @id @default(cuid())
+  email String @unique @db.VarChar(254)
+  productId String @db.VarChar(100)
+  consentText String @db.Text
+  privacyVersion String @default("newsletter-v1")
+  createdAt DateTime @default(now())
 }

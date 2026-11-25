@@ -9,8 +9,8 @@ export class AppError extends Error {
     super(message);
   }
 }
-export async function readBody(req: Request) {
-  if (Number(req.headers.get("content-length") || 0) > 65536)
+export async function readBody(req: Request, maxBytes = 65536) {
+  if (Number(req.headers.get("content-length") || 0) > maxBytes)
     throw new AppError(413, "Solicitud demasiado grande.");
   const reader = req.body?.getReader();
   if (!reader) throw new AppError(400, "Solicitud vacía.");

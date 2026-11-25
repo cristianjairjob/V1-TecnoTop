@@ -1,3 +1,5 @@
+import { ProductPageSections } from "@/components/product-page-sections";
+import { productPageContent } from "@/lib/product-page-content";
 import { productHighlights } from "@/lib/product-presentation";
 import { StockAlert } from "@/components/stock-alert";
 import { productColors } from "@/lib/product-colors";
@@ -85,6 +87,7 @@ export default async function ProductPage({
           </p>
         </div>
       </div>
+      <ProductPageSections content={productPageContent(p.pageContent)} productId={p.id} name={p.name} image={images[0]??""} email={settings.contactEmail||"cristianjairjob@gmail.com"} whatsapp={whatsapp}/>
     </div></div>
   );
 }

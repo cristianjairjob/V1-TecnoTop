@@ -1,0 +1,8 @@
+"use client";
+import {useEffect,useState} from "react";
+type Subscriber={id:string;email:string;productId:string;productName:string;createdAt:string;consentText:string;privacyVersion:string};
+export function AdminSubscribers(){
+ const [page,setPage]=useState(0),[rows,setRows]=useState<Subscriber[]>([]),[error,setError]=useState(""),[loading,setLoading]=useState(true);
+ useEffect(()=>{const controller=new AbortController();fetch("/api/admin/subscribers?page="+page,{signal:controller.signal}).then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error);setRows(data);setError("");}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[page]);
+ return <><p>Correos registrados con autorización expresa. No se envían campañas automáticamente. Cada correo aparece una vez, con el producto desde el que se registró.</p>{error&&<p role="alert">{error}</p>}{loading?<p>Cargando…</p>:<div className="table-wrap"><table><thead><tr><th>Correo</th><th>Fecha</th><th>Producto de origen</th><th>Autorización guardada</th></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td>{r.email}</td><td>{new Date(r.createdAt).toLocaleString("es-CO",{timeZone:"America/Bogota"})}</td><td>{r.productName}</td><td>{r.consentText}<br/>{r.privacyVersion}</td></tr>)}</tbody></table>{!rows.length&&<p>Aún no hay correos registrados.</p>}</div>}<div className="pagination"><button disabled={page===0||loading} onClick={()=>{setLoading(true);setPage(p=>p-1);}}>Anterior</button><span>Página {page+1}</span><button disabled={rows.length<100||loading} onClick={()=>{setLoading(true);setPage(p=>p+1);}}>Siguiente</button></div></>;
+}

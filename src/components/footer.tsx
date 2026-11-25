@@ -8,7 +8,7 @@ export function Footer({
   whatsapp: string;
 }) {
   return (
-    <footer>
+    <footer className="site-footer">
       <div className="wrap footer-grid">
         <div>
           <Link href="/" className="footer-brand">

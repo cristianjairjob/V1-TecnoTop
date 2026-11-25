@@ -1,6 +1,8 @@
 "use client";
 import { ProductImageUploader } from "@/components/product-image-uploader";
 import { visibilityControls, parseVisibility } from "@/lib/storefront-visibility";
+import { ProductPageEditor } from "@/components/product-page-editor";
+import { productPageContent, type ProductPageContent } from "@/lib/product-page-content";
 import { productHighlights } from "@/lib/product-presentation";
 import { colorPalette } from "@/lib/product-colors";
 import { useEffect, useState } from "react";
@@ -223,6 +225,7 @@ export function Admin() {
       value = {
         ...r,
         highlights: productHighlights(r.highlights),
+        pageContent: productPageContent(r.pageContent),
         salePrice: r.salePrice === null ? null : Number(r.salePrice),
         combo2Price: r.combo2Price == null ? null : Number(r.combo2Price),
         combo3Price: r.combo3Price == null ? null : Number(r.combo3Price),
@@ -281,6 +284,7 @@ export function Admin() {
         </h2>
         <nav>
           <button onClick={() => router.push("/admin/configuracion/notificaciones")}>Telegram y notificaciones</button>
+          <button onClick={() => router.push("/admin/suscriptores")}>Correos registrados</button>
           {navigation.map(({ id, name, Icon }) => (
             <button
               className={section === id ? "active" : ""}
@@ -496,6 +500,7 @@ export function Admin() {
                     <label>Stock que se muestra en la página del producto<input type="number" min={0} max={1000000} step={1} placeholder="Sin aviso de stock" value={String(edit.displayStock ?? "")} onChange={e => update("displayStock", e.target.value === "" ? null : Number(e.target.value))} /></label>
                     <p>El stock real se descuenta al comprar. El stock mostrado se edita por separado y no cambia con las compras. Déjalo vacío o en 0 para ocultar el aviso.</p>
                     <fieldset className="span-two"><legend>Frases destacadas de este producto</legend>{productHighlights(edit.highlights).map((line,i)=><label key={i}>Frase {i+1}<input maxLength={200} value={line} onChange={e=>update("highlights",productHighlights(edit.highlights).map((value,n)=>n===i?e.target.value:value))} /></label>)}<p>Puedes dejar una frase vacía para ocultarla.</p></fieldset>
+                    <ProductPageEditor productId={string(edit,"id")} value={edit.pageContent as ProductPageContent} onChange={v=>update("pageContent",v)} uploading={uploading} onBusy={setUploading}/>
                     <Field
                       label="Marca"
                       value={edit.brand}
@@ -543,7 +548,7 @@ export function Admin() {
                       value={edit.description}
                       onChange={(v) => update("description", v)}
                     />
-                    <ProductImageUploader key={string(edit, "id")} productId={string(edit, "id")} value={String(edit.imageText ?? "")} onChange={v => update("imageText", v)} onBusy={setUploading} />
+                    <ProductImageUploader key={string(edit, "id")} productId={string(edit, "id")} disabled={uploading} value={String(edit.imageText ?? "")} onChange={v => update("imageText", v)} onBusy={setUploading} />
                     <Field
                       label="Destacado"
                       type="checkbox"

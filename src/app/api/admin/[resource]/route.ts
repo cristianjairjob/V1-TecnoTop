@@ -1,3 +1,4 @@
+import { pageContentSchema } from "@/lib/product-page-content";
 import { highlightsSchema, displayStockSchema } from "@/lib/product-presentation";
 import { defaultVisibility, visibilitySchema } from "@/lib/storefront-visibility";
 import { stockSchema } from "@/lib/product-stock";
@@ -118,7 +119,7 @@ export async function POST(req: Request, ctx: Context) {
     const admin = await requireAdmin();
     await rateLimit(`admin:${admin.id}`, 100, 60);
     const { resource } = await ctx.params;
-    const body = await readBody(req);
+    const body = await readBody(req, 262144);
     let data: unknown;
     let entityId = resource;
     switch (resource) {
@@ -166,6 +167,7 @@ export async function POST(req: Request, ctx: Context) {
             stock: stockSchema.optional(),
             displayStock: displayStockSchema.optional(),
             highlights: highlightsSchema.optional(),
+            pageContent: pageContentSchema.optional(),
             salePrice: price,
             previousPrice: price,
             combo2Price: comboPriceSchema,
