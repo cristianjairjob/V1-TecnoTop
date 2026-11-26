@@ -3,7 +3,8 @@ import Link from "next/link";
 import { LocationCombobox } from "./location-combobox";
 import { isBusinessDay } from "@/lib/business-days";
 import { CheckoutTimer } from "./checkout-timer";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { metaConsent, metaContext, subscribeMetaConsent, trackMetaAction } from "@/lib/meta-browser";
 import { useRouter } from "next/navigation";
 import {
   Trash2,
@@ -48,6 +49,13 @@ export function CartCheckout({
   const [requestedDate, setRequestedDate] = useState("");
   const [department, setDepartment] = useState("");
   const [city, setCity] = useState("");
+  const advertisingConsent = useSyncExternalStore(subscribeMetaConsent, metaConsent, () => "");
+  const initiationId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!checkout || !enabled || !quote || quoting || advertisingConsent !== "accepted" || initiationId.current) return;
+    initiationId.current = crypto.randomUUID();
+    void trackMetaAction("InitiateCheckout", initiationId.current);
+  }, [checkout, enabled, quote, quoting, advertisingConsent]);
   const cities = citiesForDepartment(department);
   function setItems(nextItems: CartLine[]) {
     if (JSON.stringify(nextItems) !== JSON.stringify(items)) setQuoting(true);
@@ -118,17 +126,23 @@ export function CartCheckout({
         sessionStorage.getItem("tecnotop-checkout") || "null",
       );
       if (saved?.signature === signature) key = saved.key;
+      const paymentEventId = saved?.signature === signature && saved.paymentEventId ? saved.paymentEventId : crypto.randomUUID();
       sessionStorage.setItem(
         "tecnotop-checkout",
-        JSON.stringify({ signature, key }),
+        JSON.stringify({ signature, key, paymentEventId }),
       );
+      void trackMetaAction("AddPaymentInfo", paymentEventId, { person: {
+        firstName: validation.data.firstName, lastName: validation.data.lastName,
+        phone: validation.data.phone, email: validation.data.email,
+      } });
       const r = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, idempotencyKey: key }),
+        body: JSON.stringify({ ...body, idempotencyKey: key, meta: metaContext(key) }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
+      if (j.meta) void trackMetaAction("Purchase", j.meta.eventId, { receipt: j.meta.receipt, value: j.meta.value });
       sessionStorage.setItem("tecnotop-confirmation", JSON.stringify(j));
       sessionStorage.removeItem("tecnotop-checkout");
       setItems([]);

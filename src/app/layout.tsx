@@ -3,6 +3,8 @@ import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { MetaPixel } from "@/components/meta-pixel";
+import { metaConfig } from "@/lib/meta-config";
 import { categories, storeSettings, settings } from "@/lib/catalog";
 import { parseVisibility, visibilityStyles } from "@/lib/storefront-visibility";
 export const dynamic = "force-dynamic";
@@ -31,6 +33,7 @@ export default async function Layout({
             Saltar al contenido
           </a>
           <Header categories={cats} />
+          <MetaPixel pixelId={metaConfig().pixelId} />
           <main id="contenido">{children}</main>
           <Footer
             email={store.contactEmail || "cristianjairjob@gmail.com"}

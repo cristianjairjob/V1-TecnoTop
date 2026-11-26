@@ -319,3 +319,11 @@ model NewsletterSubscriber {
   privacyVersion String @default("newsletter-v1")
   createdAt DateTime @default(now())
 }
+
+// Non-personal delivery ledger for browser/server conversion deduplication.
+model MetaEvent {
+  id String @id @db.VarChar(100)
+  createdAt DateTime @default(now())
+  sentAt DateTime?
+  lockedUntil DateTime?
+}

@@ -2321,3 +2321,10 @@ body:has(.product-custom-footer) .site-footer { display:none; }
 
 .newsletter-consent { flex-direction:row; }
 @media(max-width:700px) { .product-page-editor .form-grid { grid-template-columns:1fr;gap:16px; } }
+/* Advertising consent is independent of order consent and never obstructs the form. */
+.meta-consent { position:fixed; z-index:80; left:16px; bottom:16px; width:min(390px,calc(100vw - 32px)); padding:18px; border:1px solid #42c7ff; border-radius:16px; background:#082541; color:#f1f8ff; box-shadow:0 8px 35px #0005; font-size:14px; }
+.meta-consent p { margin:10px 0; line-height:1.5; }
+.meta-consent a { color:#8de3ff; text-decoration:underline; }
+.meta-consent > div { display:flex; gap:12px; margin-top:12px; }
+.meta-consent button { flex:1; padding:10px; border:1px solid #42c7ff; border-radius:9px; }
+.meta-privacy-link { display:block; margin:12px auto; padding:6px 12px; font-size:12px; text-decoration:underline; }
