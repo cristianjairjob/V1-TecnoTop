@@ -5,6 +5,7 @@ import { requireAdmin, rateLimit } from "@/lib/auth";
 import { AppError, failure, sameOrigin, readBody } from "@/lib/http";
 import { orderUpdateSchema } from "@/lib/order-management";
 import { normalizedPhone } from "@/lib/whatsapp";
+import { deleteAdminOrder, deleteOrderSchema, dispatchOrderSchema, setOrderDispatch } from "@/lib/admin-order-actions";
 export async function GET(req: Request) {
   try {
     await requireAdmin();
@@ -33,5 +34,20 @@ export async function POST(req: Request) {
       await tx.auditLog.create({ data: { adminId: admin.id, entityId: input.id, action: `ORDER_ADMIN:${JSON.stringify({ from: order.status, to: input.status, observation: input.observation })}` } });
     }, { isolationLevel: "Serializable" });
     return NextResponse.json({ ok: true });
+  } catch (e) { return failure(e); }
+}
+export async function PATCH(req: Request) {
+  try {
+    sameOrigin(req); const admin = await requireAdmin(); await rateLimit(`order-admin:${admin.id}`, 40, 60);
+    const input = dispatchOrderSchema.parse(await readBody(req));
+    return NextResponse.json(await setOrderDispatch(admin.id, input));
+  } catch (e) { return failure(e); }
+}
+export async function DELETE(req: Request) {
+  try {
+    sameOrigin(req); const admin = await requireAdmin(); await rateLimit(`order-admin:${admin.id}`, 40, 60);
+    const input = deleteOrderSchema.parse(await readBody(req));
+    await deleteAdminOrder(admin.id, input.id);
+    return NextResponse.json({ ok: true, id: input.id });
   } catch (e) { return failure(e); }
 }

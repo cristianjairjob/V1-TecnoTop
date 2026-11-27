@@ -8,9 +8,12 @@ let pixelId = "";
 let memoryConsent = "";
 let storageFailed = false;
 const fired = new Set<string>();
-export function metaConsent(): string {
+export function metaPreference(): string {
   try { const value = localStorage.getItem(consentKey); return value === "accepted" || value === "declined" ? value : storageFailed ? memoryConsent : ""; } catch { return memoryConsent; }
 }
+// Opt-out: no stored decision is active; an explicit rejection always wins.
+export function metaConsent(): string { return metaPreference() === "declined" ? "declined" : "accepted"; }
+export function showMetaBanner(path: string, preference: string) { return path === "/" && !preference; }
 export function subscribeMetaConsent(listener: () => void) {
   window.addEventListener("tecnotop-meta-consent", listener);
   window.addEventListener("storage", listener);

@@ -1,7 +1,7 @@
 import { test, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { initMetaPixel, metaConsent, metaContext, metaPageView, readMetaCookie, setMetaConsent, trackMetaAction } from "../src/lib/meta-browser";
+import { initMetaPixel, metaConsent, metaPreference, metaContext, metaPageView, readMetaCookie, setMetaConsent, showMetaBanner, trackMetaAction } from "../src/lib/meta-browser";
 
 const restore: (() => void)[] = [];
 function globalValue(name: string, value: unknown) {
@@ -23,11 +23,15 @@ function setup(accepted = true) {
   globalValue("document", doc);
   return { values, scripts, windowMock, doc };
 }
-test("no script, Pixel or CAPI without consent; accepting initializes once and PageView is explicit", async () => {
+test("opt-out starts Pixel and CAPI without a saved decision; rejecting prevents all subsequent sends", async () => {
   const s = setup(false);
-  mock.method(globalThis, "fetch", async () => assert.fail("No tracking without consent"));
+  let sends = 0;
+  mock.method(globalThis, "fetch", async () => { sends++; return Response.json({ status: "sent" }); });
   initMetaPixel("123456789"); metaPageView(); await trackMetaAction("InitiateCheckout", randomUUID());
-  assert.equal(s.scripts.length, 0); assert.equal(metaContext(), null);
+  assert.equal(s.scripts.length, 1); assert.ok(metaContext()); assert.equal(sends, 1); assert.equal(metaPreference(), "");
+  setMetaConsent(false); metaPageView(); await trackMetaAction("InitiateCheckout", randomUUID());
+  assert.equal(metaContext(), null); assert.equal(sends, 1);
+  assert.deepEqual(s.windowMock.fbq?.queue.at(-1), ["consent", "revoke"]);
   setMetaConsent(true); initMetaPixel("123456789"); initMetaPixel("123456789"); metaPageView();
   assert.equal(s.scripts.length, 1);
   assert.equal(s.windowMock.fbq?.queue.filter(q => q[0] === "init").length, 1);
@@ -72,9 +76,15 @@ test("disabled cookie access does not interrupt a consented checkout context or 
 test("invalid saved consent cannot hide the banner; blocked storage still accepts an explicit choice", () => {
   const s = setup();
   s.values.set("tecnotop-meta-consent-v1", "invalid");
-  assert.equal(metaConsent(), "");
+  assert.equal(metaPreference(), "");
+  assert.equal(metaConsent(), "accepted");
   globalValue("localStorage", { getItem() { throw Error("blocked"); }, setItem() { throw Error("blocked"); } });
   setMetaConsent(true); assert.equal(metaConsent(), "accepted");
   initMetaPixel("123456789"); assert.equal(s.scripts.length, 1);
   setMetaConsent(false); assert.equal(metaConsent(), "declined");
+});
+test("banner appears only on home without a decision", () => {
+  assert.equal(showMetaBanner("/", ""), true);
+  for (const route of ["/producto/a", "/checkout", "/admin", "/politicas"]) assert.equal(showMetaBanner(route, ""), false);
+  for (const preference of ["accepted", "declined"]) assert.equal(showMetaBanner("/", preference), false);
 });
